@@ -1,0 +1,107 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lineage 1 Server</title>
+
+  <!-- ✅ Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ✅ External CSS -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- ✅  Favicon  -->
+  <link rel="icon" type="image/png" href="https://drive.google.com/uc?export=view&id=1q5BVFMtj5ohUWwanq6CmorAzMAjNxP8c" />
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-white text-base md:text-lg px-4 md:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- ✅ Header -->
+    <header class="text-center py-10 fade-in">
+   <h1 class="cinematic-title text-5xl font-bold text-white tracking-widest drop-shadow-2xl">
+  Welcome to Lineage 1
+</h1>
+      <p class="mt-4 text-lg text-gray-300">Classic PvP Server | Active GMs | Events | Custom Drops</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-4">
+        <button onclick="toggleForm('loginForm')" class="bg-blue-500 px-4 py-2 rounded-xl hover:bg-blue-600 transition">Login</button>
+        <button onclick="toggleForm('registerForm')" class="bg-green-500 px-4 py-2 rounded-xl hover:bg-green-600 transition">Register</button>
+        <button onclick="toggleForm('droplist')" class="bg-yellow-500 px-4 py-2 rounded-xl hover:bg-yellow-600 transition">Drop List</button>
+        <button onclick="toggleForm('download')" class="bg-purple-500 px-4 py-2 rounded-xl hover:bg-purple-600 transition">Download</button>
+        <button onclick="toggleForm('discord')" class="bg-indigo-500 px-4 py-2 rounded-xl hover:bg-indigo-600 transition">Join Discord</button>
+      </div>
+    </header>
+
+  <!-- === Background Video from Google Drive === -->
+  <video autoplay muted loop playsinline id="bgVideo">
+    <source src="https://drive.google.com/uc?export=download&id=1BCJw0-L4c_992_uwqwxYeejUC0IjnQ5v" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+    <!-- ✅ Countdown Timer -->
+    <section id="countdown" class="text-center py-6 fade-in">
+      <h2 class="text-2xl font-semibold"> Server Launch In:</h2>
+      <p class="text-3xl font-bold text-yellow-400 mt-2" id="timer">Loading...</p>
+    </section>
+
+    <!-- ✅ Login Form -->
+    <section id="loginForm" class="max-w-md mx-auto py-10 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-4">🔓 Login</h2>
+      <form action="login.php" method="POST" class="space-y-4">
+        <input type="text" name="username" placeholder="Username" required class="w-full p-3 rounded text-black" />
+        <input type="password" name="password" placeholder="Password" required class="w-full p-3 rounded text-black" />
+        <button class="w-full bg-blue-500 p-3 rounded hover:bg-blue-600">Login</button>
+      </form>
+    </section>
+
+    <!-- ✅ Register Form -->
+    <section id="registerForm" class="max-w-md mx-auto py-10 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-4">🔐 Register Account</h2>
+      <form action="register.php" method="POST" class="space-y-4">
+        <input type="text" name="username" placeholder="Username" required class="w-full p-3 rounded text-black" />
+        <input type="password" name="password" placeholder="Password" required class="w-full p-3 rounded text-black" />
+        <button class="w-full bg-green-500 p-3 rounded hover:bg-green-600">Register</button>
+      </form>
+    </section>
+
+    <!-- ✅ Drop List -->
+    <section id="droplist" class="max-w-4xl mx-auto py-10 fade-in hidden">
+      <h2 class="text-3xl font-bold text-center mb-6">🎁 Drop List</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gray-800 p-4 rounded-xl shadow hover:scale-105 transition">
+          <p>Sword of Ancient - Dropped by: Ancient Skeleton - Rate: 5%</p>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-xl shadow hover:scale-105 transition">
+          <p>Magic Cloak - Dropped by: Dark Elf - Rate: 2%</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ✅ Download -->
+    <section id="download" class="text-center py-10 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-4">⬇️ Download Game Client</h2>
+      <a href="downloads/L1P8.1.zip" class="bg-purple-600 px-6 py-3 rounded-xl hover:bg-purple-700 transition">Download Now</a>
+    </section>
+
+    <!-- ✅ Discord -->
+    <section id="discord" class="text-center py-10 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-4">💬 Join our Discord Community</h2>
+      <p class="text-gray-300 mb-4">Get support, updates, and chat with fellow players.</p>
+      <a href="https://discord.gg/YOUR_SERVER_INVITE" target="_blank" class="bg-indigo-600 px-6 py-3 rounded-xl hover:bg-indigo-700 transition">Join Discord</a>
+    </section>
+
+    <!-- ✅ Lore -->
+    <section class="text-center px-4 py-8 text-gray-300 text-sm md:text-base">
+      <p>Long ago, the war between humans and dragons shook the world,<br />leaving behind ancient ruins and cursed lands.</p>
+      <p class="mt-2">Now, warriors, mages, elves, and knights once again gather to<br />forge their destiny in the ever-changing world of Lineage!</p>
+      <p class="mt-2">Prepare yourself, for the battle begins now...</p>
+    </section>
+
+    <!-- ✅ Footer -->
+    <footer class="text-center py-6 text-sm text-gray-400">
+      &copy; 2025 Lineage 1 Server. All rights reserved.
+    </footer>
+  </div>
+
+  <!-- ✅ External JS -->
+  <script src="script.js"></script>
+</body>
+</html>
