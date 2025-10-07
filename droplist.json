@@ -1,0 +1,21 @@
+[
+    { "item": "Lucerne Hammer", "mob": "black night", "rate": "5.21%" },
+    { "item": "night visor", "mob": "black night", "rate": "8.33%" },
+    { "item": "sprint mail", "mob": "black night", "rate": "2.10%" },
+    { "item": "tower shield", "mob": "black night", "rate": "1.50%" },
+    { "item": "rebel shield", "mob": "black night", "rate": "0.95%" },
+    { "item": "haste potion", "mob": "black night", "rate": "15.00%" },
+    { "item": "silver longsword", "mob": "lupus", "rate": "4.80%" },
+    { "item": "Bec de Corbin", "mob": "lupus", "rate": "3.20%" },
+    { "item": "dark boots", "mob": "lupus", "rate": "7.50%" },
+    { "item": "Four North Totem", "mob": "Four North Orc Gombyon", "rate": "25.00%" },
+    { "item": "gold coin bag", "mob": "Four North Orc Gombyon", "rate": "10.00%" },
+    { "item": "iron helm", "mob": "Four North Orc Gombyon", "rate": "8.00%" },
+    { "item": "stone globe", "mob": "stone golem", "rate": "1.00%" },
+    { "item": "Magic book (Eruption)", "mob": "stone golem", "rate": "0.50%" },
+    { "item": "Spirit Crystal (Earth Bind)", "mob": "stone golem", "rate": "0.75%" },
+    { "item": "Adena", "mob": "All Monsters", "rate": "100.00%" },
+    { "item": "red potion", "mob": "orc archer", "rate": "30.00%" },
+    { "item": "transformation scroll", "mob": "orc wizard", "rate": "5.00%" },
+    { "item": "great ax", "mob": "orc guard", "rate": "4.00%" }
+]

@@ -1,107 +1,338 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lineage 1 Server</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org;">
+  <title>Lineage</title>
 
-  <!-- ✅ Tailwind CSS CDN -->
+  <!-- Maintenance Mode Check - MUST be the first script -->
+  <script src="maintenance.js"></script>
+
+  <!-- Favicon -->
+  <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
+  <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
+
+  <!-- Google Font: Cinzel for a classic fantasy look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- ✅ External CSS -->
-  <link rel="stylesheet" href="styles.css" />
+  <!-- External CSS -->
   <link rel="stylesheet" href="style.css" />
-  <!-- ✅  Favicon  -->
-  <link rel="icon" type="image/png" href="https://drive.google.com/uc?export=view&id=1q5BVFMtj5ohUWwanq6CmorAzMAjNxP8c" />
+  
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-white text-base md:text-lg px-4 md:px-8">
-  <div class="max-w-7xl mx-auto">
-    <!-- ✅ Header -->
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
+
+  <!-- ========================================================================
+  SEAMLESS BACKGROUND VIDEO
+  ======================================================================== -->
+  <div id="bg-video-container">
+    <video src="media/lineage3.mp4" autoplay muted playsinline preload="metadata" style="opacity: 1;"></video>
+  </div>
+
+  <!-- ========================================================================
+  MAIN CONTENT
+  ======================================================================== -->
+  <div id="main-content" class="max-w-7xl mx-auto hidden">
+
+    <!-- ========================================================================
+    HEADER
+    ======================================================================== -->
     <header class="text-center py-10 fade-in">
-   <h1 class="cinematic-title text-5xl font-bold text-white tracking-widest drop-shadow-2xl">
-  Welcome to Lineage 1
-</h1>
-      <p class="mt-4 text-lg text-gray-300">Classic PvP Server | Active GMs | Events | Custom Drops</p>
+      <a href="index.html">
+        <img src="images/logo-lineage.png" alt="Lineage One" class="mx-auto h-auto w-full max-w-md" />
+      </a>
+
+      <!-- Server Status Indicator -->
+      <div id="server-status" class="mt-4 text-lg">
+        <span class="status-dot"></span>
+        <span id="status-text">Checking...</span>
+      </div>
+     
       <div class="mt-6 flex flex-wrap justify-center gap-4">
-        <button onclick="toggleForm('loginForm')" class="bg-blue-500 px-4 py-2 rounded-xl hover:bg-blue-600 transition">Login</button>
-        <button onclick="toggleForm('registerForm')" class="bg-green-500 px-4 py-2 rounded-xl hover:bg-green-600 transition">Register</button>
-        <button onclick="toggleForm('droplist')" class="bg-yellow-500 px-4 py-2 rounded-xl hover:bg-yellow-600 transition">Drop List</button>
-        <button onclick="toggleForm('download')" class="bg-purple-500 px-4 py-2 rounded-xl hover:bg-purple-600 transition">Download</button>
-        <button onclick="toggleForm('discord')" class="bg-indigo-500 px-4 py-2 rounded-xl hover:bg-indigo-600 transition">Join Discord</button>
+        <button id="login-button" class="action-btn btn-blue">Login</button>
+        <button id="register-button" class="action-btn btn-green">Register</button>
+        <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
+        <a href="droplist.html" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
+        <a href="marketplace.html" id="marketplace-button" class="action-btn btn-orange">Marketplace</a>
+        <button id="download-button-header" class="action-btn btn-purple">Download</button>
+        <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
       </div>
     </header>
 
-  <!-- === Background Video from Google Drive === -->
-  <video autoplay muted loop playsinline id="bgVideo">
-    <source src="https://drive.google.com/uc?export=download&id=1BCJw0-L4c_992_uwqwxYeejUC0IjnQ5v" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-
-    <!-- ✅ Countdown Timer -->
+    <!-- ========================================================================
+    COUNTDOWN TIMER
+    ======================================================================== -->
     <section id="countdown" class="text-center py-6 fade-in">
-      <h2 class="text-2xl font-semibold"> Server Launch In:</h2>
+      <h2 class="cinematic-title cinematic-title-red text-2xl font-semibold"> Server Launch In:</h2>
       <p class="text-3xl font-bold text-yellow-400 mt-2" id="timer">Loading...</p>
     </section>
 
-    <!-- ✅ Login Form -->
-    <section id="loginForm" class="max-w-md mx-auto py-10 fade-in hidden">
-      <h2 class="text-2xl font-bold mb-4">🔓 Login</h2>
-      <form action="login.php" method="POST" class="space-y-4">
-        <input type="text" name="username" placeholder="Username" required class="w-full p-3 rounded text-black" />
-        <input type="password" name="password" placeholder="Password" required class="w-full p-3 rounded text-black" />
-        <button class="w-full bg-blue-500 p-3 rounded hover:bg-blue-600">Login</button>
-      </form>
-    </section>
-
-    <!-- ✅ Register Form -->
-    <section id="registerForm" class="max-w-md mx-auto py-10 fade-in hidden">
-      <h2 class="text-2xl font-bold mb-4">🔐 Register Account</h2>
-      <form action="register.php" method="POST" class="space-y-4">
-        <input type="text" name="username" placeholder="Username" required class="w-full p-3 rounded text-black" />
-        <input type="password" name="password" placeholder="Password" required class="w-full p-3 rounded text-black" />
-        <button class="w-full bg-green-500 p-3 rounded hover:bg-green-600">Register</button>
-      </form>
-    </section>
-
-    <!-- ✅ Drop List -->
-    <section id="droplist" class="max-w-4xl mx-auto py-10 fade-in hidden">
-      <h2 class="text-3xl font-bold text-center mb-6">🎁 Drop List</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-gray-800 p-4 rounded-xl shadow hover:scale-105 transition">
-          <p>Sword of Ancient - Dropped by: Ancient Skeleton - Rate: 5%</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-xl shadow hover:scale-105 transition">
-          <p>Magic Cloak - Dropped by: Dark Elf - Rate: 2%</p>
-        </div>
+    <!-- ========================================================================
+    NEWS & ANNOUNCEMENTS
+    ======================================================================== -->
+    <section id="news" class="max-w-3xl mx-auto py-6 fade-in">
+      <h2 class="cinematic-title cinematic-title-red text-2xl font-semibold text-center mb-6">Latest News & Announcements</h2>
+      <div id="news-container" class="space-y-6">
+        <!-- News items will be loaded here by script.js -->
+        <p class="text-center text-gray-400">Loading news...</p>
       </div>
     </section>
 
-    <!-- ✅ Download -->
-    <section id="download" class="text-center py-10 fade-in hidden">
-      <h2 class="text-2xl font-bold mb-4">⬇️ Download Game Client</h2>
-      <a href="downloads/L1P8.1.zip" class="bg-purple-600 px-6 py-3 rounded-xl hover:bg-purple-700 transition">Download Now</a>
+    <!-- ========================================================================
+    LOGIN FORM
+    ======================================================================== -->
+    <section id="loginForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
+      <div id="login-message" class="text-center mb-4"></div>
+      <h2 class="text-2xl font-bold mb-4">Login</h2>
+      <form id="login-form" action="login.php" method="POST" class="space-y-4">
+        <div class="form-group">
+          <input type="text" id="login-username" name="username" required class="form-input" placeholder=" " aria-describedby="login-username-error" />
+          <label for="login-username" class="form-label">Username</label>
+          <div id="login-username-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+        </div>
+        <div class="form-group">
+          <input type="password" id="login-password" name="password" required class="form-input" placeholder=" " aria-describedby="login-password-error" />
+          <label for="login-password" class="form-label">Password</label>
+          <button type="button" class="password-toggle-icon" aria-label="Show password" aria-pressed="false">
+            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>
+          </button>
+          <div id="login-password-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 rounded border-gray-500 bg-gray-700 text-yellow-500 focus:ring-yellow-600">
+            <label for="remember-me" class="ml-2 block text-sm text-gray-300">Remember me</label>
+          </div>
+        </div>
+        <button class="w-full action-btn btn-blue mt-4">Login</button>
+      </form>
+      <div class="text-center mt-4">
+        <a href="#" id="forgot-password-button" class="text-sm text-gray-400 hover:text-yellow-400">Forgot Password?</a>
+      </div>
     </section>
 
-    <!-- ✅ Discord -->
+    <!-- ========================================================================
+    REGISTER FORM
+    ======================================================================== -->
+    <section id="registerForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
+      <div id="register-message" class="text-center mb-4"></div>
+      <h2 class="text-2xl font-bold mb-4">Register Account</h2>
+      <form id="registration-form" action="register.php" method="POST" class="space-y-4">
+        <div class="form-group">
+          <input type="text" id="register-username" name="username" required class="form-input" placeholder=" " aria-describedby="register-username-error" />
+          <label for="register-username" class="form-label">Username</label>
+          <div id="register-username-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+        </div>
+        <div class="form-group">
+          <input type="email" id="register-email" name="email" required class="form-input" placeholder=" " aria-describedby="register-email-error" />
+          <label for="register-email" class="form-label">Email (e.g., @gmail.com)</label>
+          <div id="register-email-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+        </div>
+        <div class="form-group">
+          <input type="password" id="register-password" name="password" required class="form-input" placeholder=" " aria-describedby="register-password-error" />
+          <label for="register-password" class="form-label">Password</label>
+          <button type="button" class="password-toggle-icon" aria-label="Show password" aria-pressed="false">
+            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>
+          </button>
+          <div id="register-password-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+        </div>
+        <button class="w-full action-btn btn-green mt-4">Register</button>
+      </form>
+    </section>
+
+    <!-- ========================================================================
+    FORGOT PASSWORD FORM
+    ======================================================================== -->
+    <section id="forgotPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
+      <div id="forgot-password-message" class="text-center mb-4"></div>
+      <h2 class="text-2xl font-bold mb-4">Retrieve Password</h2>
+      <p class="text-sm text-gray-400 mb-4">Enter your registered email to retrieve your password.</p>
+      <form id="forgot-password-form" class="space-y-4">
+        <div class="form-group">
+          <input type="email" id="forgot-email" name="email" placeholder=" " required class="form-input" />
+          <label for="forgot-email" class="form-label">✉️ Email Address</label>
+        </div>
+        <button class="w-full action-btn btn-orange mt-4">Retrieve Password</button>
+      </form>
+    </section>
+
+    <!-- ========================================================================
+    RESET PASSWORD FORM (after getting code)
+    ======================================================================== -->
+    <section id="resetPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
+      <div id="reset-password-message" class="text-center mb-4"></div>
+      <h2 class="text-2xl font-bold mb-4">Reset Your Password</h2>
+      <form id="reset-password-form" class="space-y-4">
+        <!-- This field will hold the email of the user resetting the password -->
+        <input type="hidden" id="reset-email" name="email" />
+        <div class="form-group">
+          <input type="text" id="reset-code" name="code" placeholder=" " required class="form-input" />
+          <label for="reset-code" class="form-label">🔑 Reset Code</label>
+        </div>
+        <div class="form-group">
+          <input type="password" id="reset-new-password" name="new_password" placeholder=" " required class="form-input" />
+          <label for="reset-new-password" class="form-label">New Password</label>
+        </div>
+        <button class="w-full action-btn btn-green mt-4">Set New Password</button>
+      </form>
+    </section>
+
+    <!-- ========================================================================
+    CHARACTER CREATION FORM
+    ======================================================================== -->
+    <section id="characterCreationForm" class="ui-panel character-slot max-w-md mx-auto py-10 fade-in hidden">
+      <div id="character-creation-message" class="text-center mb-4"></div>
+      <h2 class="text-2xl font-bold mb-4">Create Your Character</h2>
+      <form id="character-creation-form" class="space-y-4">
+        <div class="form-group">
+          <input type="text" id="charname" name="charname" placeholder=" " required class="form-input" />
+          <label for="charname" class="form-label">✨ Character Name</label>
+          <div id="charname-error" class="text-sm mt-1" aria-live="polite"></div>
+        </div>
+        
+        <!-- Gender Selection -->
+        <fieldset>
+          <legend class="font-bold text-lg mb-2 block">Gender</legend>
+          <div class="gender-select-container">
+            <!-- The label now wraps the input, which is another valid accessibility pattern -->
+            <input type="radio" id="gender-male" name="gender" value="Male" checked>
+            <label for="gender-male" class="gender-select-label">Male</label>
+            <input type="radio" id="gender-female" name="gender" value="Female">
+            <label for="gender-female" class="gender-select-label">Female</label>
+          </div>
+        </fieldset>
+
+        <!-- Class Selection -->
+        <fieldset>
+          <legend class="font-bold text-lg mb-2 block">Class</legend>
+          <div id="class-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Class cards will be generated by script.js -->
+          </div>
+          <!-- Hidden select for form submission -->
+          <select name="class" id="class-select" required class="hidden">
+             <!-- Options will be generated by script.js -->
+          </select>
+        </fieldset>
+
+        <div class="flex gap-4 mt-4">
+          <button type="button" id="back-to-main-btn" class="w-full action-btn btn-gray">Back</button>
+          <button class="w-full action-btn btn-green">Create Character</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========================================================================
+    DOWNLOAD
+    ======================================================================== -->
+    <section id="download" class="text-center py-10 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-4">⬇️ Download Game Client</h2>
+      <a href="downloads/L1P8.1.zip" id="download-btn" class="action-btn btn-purple">
+        <span class="btn-text-original">Download Now</span>
+        <div class="download-progress-container hidden">
+          <div class="bouncing-ball"></div>
+          <span class="download-percentage">0%</span>
+        </div>
+      </a>
+    </section>
+
+    <!-- ========================================================================
+    DISCORD
+    ======================================================================== -->
     <section id="discord" class="text-center py-10 fade-in hidden">
       <h2 class="text-2xl font-bold mb-4">💬 Join our Discord Community</h2>
       <p class="text-gray-300 mb-4">Get support, updates, and chat with fellow players.</p>
-      <a href="https://discord.gg/YOUR_SERVER_INVITE" target="_blank" class="bg-indigo-600 px-6 py-3 rounded-xl hover:bg-indigo-700 transition">Join Discord</a>
+      <a href="https://discord.gg/SH8unyQRf7" target="_blank" rel="noopener noreferrer" class="action-btn btn-indigo">Join Discord</a>
     </section>
 
-    <!-- ✅ Lore -->
-    <section class="text-center px-4 py-8 text-gray-300 text-sm md:text-base">
-      <p>Long ago, the war between humans and dragons shook the world,<br />leaving behind ancient ruins and cursed lands.</p>
-      <p class="mt-2">Now, warriors, mages, elves, and knights once again gather to<br />forge their destiny in the ever-changing world of Lineage!</p>
-      <p class="mt-2">Prepare yourself, for the battle begins now...</p>
+    <!-- ========================================================================
+    LORE
+    ======================================================================== -->
+    <section id="lore" class="text-center px-4 py-10 text-gray-300 text-sm md:text-base fade-in">
+      <h2 class="text-xl font-semibold mb-2">A legend in online gaming:</h2>
+      <h2 class="text-4xl font-bold mb-6">Lineage</h2>
+      <p class="max-w-3xl mx-auto leading-relaxed">Released in 1998, Lineage, an MMORPG set in a medieval fantasy world, was the first Internet-base online game in Korea. The first single game to archieve KRW 1 trillion in cumulative sales by 2008, it laid the ground for future MMORPGs with elements such as guilds and Castle Siege. Twenty years later, it is still an influential phenomenon in the world of online cultural content representative of Korea.</p>
     </section>
 
-    <!-- ✅ Footer -->
-    <footer class="text-center py-6 text-sm text-gray-400">
-      &copy; 2025 Lineage 1 Server. All rights reserved.
+    <!-- ========================================================================
+    IMAGE GALLERY
+    ======================================================================== -->
+    <section id="gallery" class="max-w-5xl mx-auto py-10 fade-in">
+      <h2 class="text-3xl font-bold text-center mb-8">Gallery</h2>
+      <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="gallery-item"><video src="gallery/intro.mp4" loop muted playsinline preload="metadata" class="w-full h-full object-cover"></video></div>
+        <div class="gallery-item"><img src="gallery/2.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/3.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/4.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/5.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/6.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/7.jpg" alt="" loading="lazy"></div>
+        <div class="gallery-item"><img src="gallery/8.jpg" alt="" loading="lazy"></div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+    IMAGE LIGHTBOX/MODAL
+    ======================================================================== -->
+    <div id="lightbox" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <img id="lightbox-img" src="" alt="Enlarged gallery image" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 scale-95">
+      <!-- Lightbox Navigation -->
+      <button id="lightbox-prev" class="lightbox-nav-btn left-4">&lt;</button>
+      <button id="lightbox-next" class="lightbox-nav-btn right-4">&gt;</button>
+      <button id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold opacity-70 hover:opacity-100 transition-opacity">&times;</button>
+    </div>
+
+    <!-- ========================================================================
+    GENERIC SUCCESS MODAL
+    ======================================================================== -->
+    <div id="success-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="success-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+            <h2 id="success-modal-title" class="text-2xl font-bold text-green-400 mb-4">Success!</h2>
+            <p id="success-modal-message" class="text-gray-300 mb-6">Operation completed successfully.</p>
+            <div class="flex justify-center gap-4">
+                <button id="success-modal-ok-btn" class="action-btn btn-green">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+    GENERIC INFO/WARNING MODAL
+    ======================================================================== -->
+    <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="info-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+            <h2 id="info-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
+            <p id="info-modal-message" class="text-gray-300 mb-6">This is an informational message.</p>
+            <div class="flex justify-center gap-4">
+                <button id="info-modal-ok-btn" class="action-btn btn-blue">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+    FOOTER
+    ======================================================================== -->
+    <footer class="text-center py-6 text-sm text-gray-400 space-y-4">
+      <div id="footer-text-container">&copy; 2025 Lineage 1 Server. All rights reserved.</div>
+      <div id="social-links-container" class="flex justify-center gap-6">
+        <a href="#" id="social-facebook" class="hidden social-link" target="_blank" rel="noopener noreferrer" title="Facebook">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+        </a>
+        <a href="#" id="social-youtube" class="hidden social-link" target="_blank" rel="noopener noreferrer" title="YouTube">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+        </a>
+      </div>
     </footer>
+
   </div>
 
-  <!-- ✅ External JS -->
+  <!-- External JS -->
+  <script src="modal.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

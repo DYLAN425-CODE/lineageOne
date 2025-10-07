@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Grand Opening Announcement!",
+    "launchDateISO": "2027-08-30T18:00:00+08:00",
+    "date": "August 30, 2027",
+    "summary": "We are thrilled to announce the official launch date of our server! Prepare for an epic journey starting <strong>August 30, 2027, at 6:00 PM (GMT+8)</strong>. The gates to Aden will open for all adventurers.",
+    "fullText": "After months of development and testing, the time has finally come. We invite you to join us for the grand opening. Gather your friends, choose your path, and get ready to forge your legacy in a world of classic adventure and fierce battles. See you in Aden!"
+  },
+  {
+    "title": "Client Download Now Available",
+    "date": "August 10, 2027", 
+    "summary": "The game client is now available for pre-loading! Head over to the <a href='#' class='text-purple-400 hover:text-purple-300 underline news-download-link'>Download</a> section to get a head start.",
+    "fullText": "To ensure a smooth launch day experience for everyone, we have made the client available for download ahead of time. Please install the game and make sure you are ready for launch day. This will help prevent long download times when the server goes live."
+  }
+]
