@@ -3,7 +3,7 @@
  * @param {string} id The ID of the section to toggle.
  */
 function toggleForm(id) {
-  const formSections = ['loginForm', 'registerForm', 'forgotPasswordForm', 'resetPasswordForm', 'characterCreationForm', 'download', 'discord'];
+  const formSections = ['loginForm', 'registerForm', 'forgotPasswordForm', 'resetPasswordForm', 'download', 'discord'];
   if (!formSections.includes(id)) {
     return;
   }
@@ -21,6 +21,12 @@ function toggleForm(id) {
 
   // Toggle the target section's visibility
   targetSection.classList.toggle('hidden');
+
+  // --- Accessibility: Focus on the first input when a form is opened ---
+  if (isOpening) {
+    const firstInput = targetSection.querySelector('input:not([type="hidden"]), select, button');
+    firstInput?.focus();
+  }
 
   // --- Custom Logic for Hiding Sections ---
   // Hide news and gallery when login or register forms are being opened.
@@ -88,27 +94,46 @@ async function loadServerProperties() {
         SITE_FONT_FAMILY: "'Cinzel', serif"
     };
     try {
-        const response = await fetch('server.properties');
+        // Add a cache-busting query parameter to ensure the latest version is fetched.
+        const response = await fetch(`server.properties?v=${Date.now()}`);
         if (!response.ok) {
             console.warn('server.properties not found. Using default feature settings.');
             return defaultProps;
         }
         const text = await response.text();
         const properties = {};
+        const numericKeys = ['REMEMBER_ME_DURATION_DAYS', 'SERVER_STATUS_INTERVAL_SECONDS', 'MAX_CHARACTER_SLOTS', 'DROPLIST_ITEMS_PER_PAGE', 'RING3_LEVEL_REQUIREMENT', 'RING4_LEVEL_REQUIREMENT', 'STACKABLE_PRICE_MIN', 'STACKABLE_PRICE_MAX', 'NONSTACKABLE_PRICE_MIN', 'NONSTACKABLE_PRICE_MAX'];
+
         text.split('\n').forEach(line => {
             line = line.trim();
             if (line && !line.startsWith('#')) {
-                const [key, value] = line.split('=').map(s => s.trim());
-                if (key && value !== undefined) {
-                    // Keep JSON strings as strings
-                    if (key.endsWith('_JSON')) {
+                const separatorIndex = line.indexOf('=');
+                if (separatorIndex === -1) return;
+
+                const key = line.substring(0, separatorIndex).trim();
+                let value = line.substring(separatorIndex + 1).trim();
+
+                if (key) {
+                    // 1. Handle Booleans
+                    if (value.toLowerCase() === 'true') {
+                        properties[key] = true;
+                    } else if (value.toLowerCase() === 'false') {
+                        properties[key] = false;
+                    // 2. Handle JSON strings
+                    } else if (key.endsWith('_JSON')) {
+                        try {
+                            properties[key] = JSON.parse(value);
+                        } catch (e) {
+                            console.error(`Error parsing JSON for key ${key}:`, e);
+                            properties[key] = defaultProps[key] ? JSON.parse(defaultProps[key]) : null; // Fallback
+                        }
+                    // 3. Handle specific numeric keys
+                    } else if (numericKeys.includes(key) && !isNaN(Number(value))) {
+                        properties[key] = Number(value);
+                    // 4. Handle all other cases as strings
+                    } else {
                         properties[key] = value;
                     }
-                    else if (value.toLowerCase() === 'true') properties[key] = true;
-                    else if (value.toLowerCase() === 'false') properties[key] = false;
-                    // Check if it's a number for duration/interval settings
-                    else if (!isNaN(Number(value))) properties[key] = Number(value);
-                    else properties[key] = value; // Otherwise, treat as string (for dates)
                 }
             }
         });
@@ -325,11 +350,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.reload(); // Reload the page to reflect the logged-out state
   });
 
-  document.getElementById('back-to-main-btn')?.addEventListener('click', () => {
-    // This should close the form, not redirect.
-    toggleForm('characterCreationForm');
-  });
-
   // ========================================================================
   //  SEAMLESS BACKGROUND VIDEO PLAYLIST
   // ========================================================================
@@ -363,27 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // When the first video ends, show the main content
         if (currentPlayerIndex === 0 && mainContent) {
             mainContent.classList.remove('hidden');
-            if (window.location.hash === '#create') {
-                const session = JSON.parse(localStorage.getItem('session'));
-                if (session && Date.now() < session.expiry) {
-                    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-                    const userCharacterCount = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase()).length;
-                    const maxSlots = window.serverProperties.MAX_CHARACTER_SLOTS || 6;
-
-                    if (userCharacterCount >= maxSlots) {
-                        // If slots are full, show a modal and redirect.
-                        showInfoModal('Character Slots Full', 'You have reached the maximum number of characters. Please delete a character to create a new one.', () => {
-                            window.location.href = 'dashboard.html';
-                        });
-                    } else {
-                        toggleForm('characterCreationForm');
-                    }
-                } else {
-                    toggleForm('characterCreationForm'); // Show form for non-logged-in users (will be prompted to log in)
-                }
-            } else {
-                // No hash, show main content normally
-            }
+            // The hash check logic has been moved to the main DOMContentLoaded block to run reliably.
         }
 
         currentPlayerIndex++;
@@ -742,185 +742,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginForm.classList.remove('hidden');
             loginForm.scrollIntoView({ behavior: 'smooth' });
         }
-    });
-  }
-
-  // --- Character Creation Form ---
-  const creationForm = document.getElementById('character-creation-form');
-  const charNameInput = document.getElementById('charname');
-  const charNameStatus = document.getElementById('charname-error');
-
-  if (charNameInput && charNameStatus) {
-    charNameInput.addEventListener('input', debounce(() => {
-      const name = charNameInput.value.trim();
-      
-      if (name.length < 3) {
-        charNameStatus.textContent = ''; // Clear message if too short
-        return;
-      }
-
-      // Check against existing characters
-      const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-      const isTaken = allCharacters.some(char => char.name.toLowerCase() === name.toLowerCase());
-
-      if (isTaken) {
-        charNameStatus.innerHTML = `<span class="text-red-500">❌ Name is already taken.</span>`;
-      } else {
-        charNameStatus.innerHTML = `<span class="text-green-400">✅ Name is available!</span>`;
-      }
-    }, 500)); // 500ms delay
-
-    // Clear the status when the form is hidden
-    const creationFormSection = document.getElementById('characterCreationForm');
-    const observer = new MutationObserver(() => {
-        if (creationFormSection.classList.contains('hidden')) charNameStatus.textContent = '';
-    });
-    observer.observe(creationFormSection, { attributes: true, attributeFilter: ['class'] });
-  }
-
-  if (creationForm) {
-    creationForm.addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const messageDiv = document.getElementById('character-creation-message');
-      const session = JSON.parse(localStorage.getItem('session'));
-
-      // Check if user is logged in
-      if (!session || Date.now() > session.expiry) {
-        messageDiv.innerHTML = `<p class="font-bold text-red-500">You must be logged in to create a character.</p>`;
-        return;
-      }
-
-      const charName = this.elements.charname.value;
-      const charGender = this.elements.gender.value;
-      const charClass = document.getElementById('class-select').value;
-
-      const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-
-      // Check if character name is already taken
-      if (allCharacters.some(char => char.name.toLowerCase() === charName.toLowerCase())) {
-        messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Character name is already taken.</p>`;
-        return;
-      }
-
-      // Check if the user has reached the character slot limit (6)
-      const maxSlots = window.serverProperties.MAX_CHARACTER_SLOTS || 6;
-      const userCharacterCount = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase()).length;
-      if (userCharacterCount >= 6) {
-        messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Character slots are full. You cannot create more characters.</p>`;
-        return;
-      }
-
-      // Define base stats (can be customized per class)
-      const baseStats = {
-        "Knight": { str: 18, con: 16, dex: 12, wis: 11, int: 9 },
-        "Elf": { str: 12, con: 12, dex: 18, wis: 12, int: 12 },
-        "Mage": { str: 9, con: 12, dex: 11, wis: 16, int: 18 },
-        "Dark Elf": { str: 16, con: 12, dex: 15, wis: 10, int: 12 },
-        "Dragon Knight": { str: 17, con: 17, dex: 11, wis: 10, int: 10 },
-        "Warrior": { str: 18, con: 17, dex: 11, wis: 10, int: 9 },
-        "Monarch": { str: 14, con: 14, dex: 14, wis: 14, int: 14 },
-        "Princess": { str: 14, con: 14, dex: 14, wis: 14, int: 14 },
-      };
-
-      // Create new character object
-      const newCharacter = {
-        owner: session.username,
-        name: charName,
-        gender: charGender,
-        class: charClass,
-        stats: baseStats[charClass] || baseStats["Knight"],
-        inventory: []
-      };
-
-      // Add starter inventory from server.properties
-      const starterInventory = JSON.parse(window.serverProperties.STARTER_INVENTORY_JSON);
-      newCharacter.inventory = starterInventory.map(item => ({ ...item, id: generateUUID() }));
-
-      allCharacters.push(newCharacter);
-      localStorage.setItem('characters', JSON.stringify(allCharacters));
-
-      // Show custom success modal instead of alert
-      showInfoModal(
-        'Character Created!',
-        'Your new hero is ready for adventure. You will now be redirected to the dashboard.',
-        {
-          type: 'success',
-          onOk: () => window.location.href = 'dashboard.html'
-        }
-      );
-    });
-  }
-
-  // --- Populate and Handle Character Class Selection ---
-  const classSelectionGrid = document.getElementById('class-selection-grid');
-  const classSelectDropdown = document.getElementById('class-select');
-
-  if (classSelectionGrid && classSelectDropdown) {
-    const classes = [
-      { name: 'Monarch', icon: '👑' },
-      { name: 'Knight', icon: '🛡️' },
-      { name: 'Elf', icon: '🏹' },
-      { name: 'Mage', icon: '🔮' },
-      { name: 'Dark Elf', icon: '🗡️' },
-      { name: 'Dragon Knight', icon: '🐉' },
-      { name: 'Warrior', icon: '⚔️' }
-    ];
-
-    function renderClasses() {
-      classSelectionGrid.innerHTML = '';
-      classSelectDropdown.innerHTML = '';
-
-      classes.forEach((cls, index) => {
-        // Create the visual card
-        const card = document.createElement('div');
-        card.className = 'class-card';
-        card.dataset.value = cls.name;
-        card.innerHTML = `
-          <div class="class-icon">${cls.icon}</div>
-          <div class="class-name">${cls.name}</div>
-        `;
-
-        // Create the hidden dropdown option
-        const option = document.createElement('option');
-        option.value = cls.name;
-        option.textContent = cls.name;
-
-        // Set the first class as selected by default
-        if (index === 0) {
-          card.classList.add('selected');
-          option.selected = true;
-        }
-
-        card.addEventListener('click', () => {
-          // Update visual selection
-          document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          // Update hidden dropdown
-          classSelectDropdown.value = cls.name;
-        });
-
-        classSelectionGrid.appendChild(card);
-        classSelectDropdown.appendChild(option);
-      });
-    }
-
-    renderClasses();
-
-    const genderRadios = document.querySelectorAll('input[name="gender"]');
-    genderRadios.forEach(radio => {
-      radio.addEventListener('change', () => {
-        const selectedGender = document.querySelector('input[name="gender"]:checked').value;
-        const monarchClass = classes.find(c => c.name === 'Monarch' || c.name === 'Princess');
-        if (monarchClass) {
-          if (selectedGender === 'Female') {
-            monarchClass.name = 'Princess';
-          } else {
-            monarchClass.name = 'Monarch';
-          }
-          renderClasses();
-        }
-      });
     });
   }
 

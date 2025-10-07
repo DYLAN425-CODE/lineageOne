@@ -43,7 +43,7 @@
     HEADER
     ======================================================================== -->
     <header class="text-center py-10 fade-in">
-      <a href="index.html">
+      <a href="/">
         <img src="images/logo-lineage.png" alt="Lineage One" class="mx-auto h-auto w-full max-w-md" />
       </a>
 
@@ -57,8 +57,8 @@
         <button id="login-button" class="action-btn btn-blue">Login</button>
         <button id="register-button" class="action-btn btn-green">Register</button>
         <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
-        <a href="droplist.html" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
-        <a href="marketplace.html" id="marketplace-button" class="action-btn btn-orange">Marketplace</a>
+        <a href="/droplist" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
+        <a href="/marketplace" id="marketplace-button" class="action-btn btn-orange">Marketplace</a>
         <button id="download-button-header" class="action-btn btn-purple">Download</button>
         <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
       </div>
@@ -86,10 +86,11 @@
     <!-- ========================================================================
     LOGIN FORM
     ======================================================================== -->
-    <section id="loginForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
-      <div id="login-message" class="text-center mb-4"></div>
-      <h2 class="text-2xl font-bold mb-4">Login</h2>
-      <form id="login-form" action="login.php" method="POST" class="space-y-4">
+    <section id="loginForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="login-heading">
+      <div id="login-message" role="alert" class="text-center mb-4"></div>
+      <form id="login-form" action="login.php" method="POST">
+        <fieldset class="space-y-4">
+          <legend id="login-heading" class="text-2xl font-bold mb-4 text-center">Login</legend>
         <div class="form-group">
           <input type="text" id="login-username" name="username" required class="form-input" placeholder=" " aria-describedby="login-username-error" />
           <label for="login-username" class="form-label">Username</label>
@@ -111,6 +112,7 @@
           </div>
         </div>
         <button class="w-full action-btn btn-blue mt-4">Login</button>
+        </fieldset>
       </form>
       <div class="text-center mt-4">
         <a href="#" id="forgot-password-button" class="text-sm text-gray-400 hover:text-yellow-400">Forgot Password?</a>
@@ -120,10 +122,11 @@
     <!-- ========================================================================
     REGISTER FORM
     ======================================================================== -->
-    <section id="registerForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
-      <div id="register-message" class="text-center mb-4"></div>
-      <h2 class="text-2xl font-bold mb-4">Register Account</h2>
-      <form id="registration-form" action="register.php" method="POST" class="space-y-4">
+    <section id="registerForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="register-heading">
+      <div id="register-message" role="alert" class="text-center mb-4"></div>
+      <form id="registration-form" action="register.php" method="POST">
+        <fieldset class="space-y-4">
+          <legend id="register-heading" class="text-2xl font-bold mb-4 text-center">Register Account</legend>
         <div class="form-group">
           <input type="text" id="register-username" name="username" required class="form-input" placeholder=" " aria-describedby="register-username-error" />
           <label for="register-username" class="form-label">Username</label>
@@ -144,32 +147,36 @@
           <div id="register-password-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
         </div>
         <button class="w-full action-btn btn-green mt-4">Register</button>
+        </fieldset>
       </form>
     </section>
 
     <!-- ========================================================================
     FORGOT PASSWORD FORM
     ======================================================================== -->
-    <section id="forgotPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
-      <div id="forgot-password-message" class="text-center mb-4"></div>
-      <h2 class="text-2xl font-bold mb-4">Retrieve Password</h2>
-      <p class="text-sm text-gray-400 mb-4">Enter your registered email to retrieve your password.</p>
-      <form id="forgot-password-form" class="space-y-4">
+    <section id="forgotPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="forgot-heading">
+      <div id="forgot-password-message" role="alert" class="text-center mb-4"></div>
+      <form id="forgot-password-form">
+        <fieldset class="space-y-4">
+          <legend id="forgot-heading" class="text-2xl font-bold mb-4 text-center">Retrieve Password</legend>
+          <p class="text-sm text-gray-400 mb-4 text-center">Enter your registered email to retrieve your password.</p>
         <div class="form-group">
           <input type="email" id="forgot-email" name="email" placeholder=" " required class="form-input" />
           <label for="forgot-email" class="form-label">✉️ Email Address</label>
         </div>
         <button class="w-full action-btn btn-orange mt-4">Retrieve Password</button>
+        </fieldset>
       </form>
     </section>
 
     <!-- ========================================================================
     RESET PASSWORD FORM (after getting code)
     ======================================================================== -->
-    <section id="resetPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden">
-      <div id="reset-password-message" class="text-center mb-4"></div>
-      <h2 class="text-2xl font-bold mb-4">Reset Your Password</h2>
-      <form id="reset-password-form" class="space-y-4">
+    <section id="resetPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="reset-heading">
+      <div id="reset-password-message" role="alert" class="text-center mb-4"></div>
+      <form id="reset-password-form">
+        <fieldset class="space-y-4">
+          <legend id="reset-heading" class="text-2xl font-bold mb-4 text-center">Reset Your Password</legend>
         <!-- This field will hold the email of the user resetting the password -->
         <input type="hidden" id="reset-email" name="email" />
         <div class="form-group">
@@ -181,50 +188,7 @@
           <label for="reset-new-password" class="form-label">New Password</label>
         </div>
         <button class="w-full action-btn btn-green mt-4">Set New Password</button>
-      </form>
-    </section>
-
-    <!-- ========================================================================
-    CHARACTER CREATION FORM
-    ======================================================================== -->
-    <section id="characterCreationForm" class="ui-panel character-slot max-w-md mx-auto py-10 fade-in hidden">
-      <div id="character-creation-message" class="text-center mb-4"></div>
-      <h2 class="text-2xl font-bold mb-4">Create Your Character</h2>
-      <form id="character-creation-form" class="space-y-4">
-        <div class="form-group">
-          <input type="text" id="charname" name="charname" placeholder=" " required class="form-input" />
-          <label for="charname" class="form-label">✨ Character Name</label>
-          <div id="charname-error" class="text-sm mt-1" aria-live="polite"></div>
-        </div>
-        
-        <!-- Gender Selection -->
-        <fieldset>
-          <legend class="font-bold text-lg mb-2 block">Gender</legend>
-          <div class="gender-select-container">
-            <!-- The label now wraps the input, which is another valid accessibility pattern -->
-            <input type="radio" id="gender-male" name="gender" value="Male" checked>
-            <label for="gender-male" class="gender-select-label">Male</label>
-            <input type="radio" id="gender-female" name="gender" value="Female">
-            <label for="gender-female" class="gender-select-label">Female</label>
-          </div>
         </fieldset>
-
-        <!-- Class Selection -->
-        <fieldset>
-          <legend class="font-bold text-lg mb-2 block">Class</legend>
-          <div id="class-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <!-- Class cards will be generated by script.js -->
-          </div>
-          <!-- Hidden select for form submission -->
-          <select name="class" id="class-select" required class="hidden">
-             <!-- Options will be generated by script.js -->
-          </select>
-        </fieldset>
-
-        <div class="flex gap-4 mt-4">
-          <button type="button" id="back-to-main-btn" class="w-full action-btn btn-gray">Back</button>
-          <button class="w-full action-btn btn-green">Create Character</button>
-        </div>
       </form>
     </section>
 
