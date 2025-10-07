@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lineage One - Item Viewer</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://api.ipify.org;">
+  <!-- Maintenance Mode Check - MUST be the first script -->
+  <script src="maintenance.js"></script>
+
+  <!-- Favicon -->
+  <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
+  <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .item-card {
+        background-color: rgba(10, 10, 20, 0.6);
+        border: 1px solid #3a2d20;
+        backdrop-filter: blur(3px);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 15px rgba(252, 207, 63, 0.3);
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+    .stat-item {
+        background-color: rgba(0,0,0,0.2);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body
+  class="bg-gradient-to-br from-gray-900 to-black h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 flex flex-col"
+>
+  <div id="bg-video-container">
+    <video src="media/lineage2.mp4" autoplay muted loop playsinline preload="metadata"></video>
+  </div>
+
+  <!-- Main container for the item viewer page -->
+  <div id="page-content" class="max-w-7xl mx-auto w-full flex flex-col flex-grow relative z-10 min-h-0 transition-all duration-300">
+    <!-- Fixed Header Section -->
+    <div class="flex-shrink-0">
+      <header class="flex justify-between items-center pt-8 pb-4">
+        <div class="flex-1">_
+          <a href="index.html" class="inline-block bg-blue-600 px-8 py-2 rounded-lg hover:bg-blue-700 transition">Return to Main</a>
+        </div>_
+        <h2 class="flex-1 text-3xl font-bold text-center text-yellow-400 text-shadow">
+          Item Viewer
+        </h2>
+        <div class="flex-1"></div>
+      </header>
+
+      <div class="search-container mb-6 relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <input type="text" id="item-search" placeholder="Search for an item..." class="droplist-search-input" />
+      </div>
+    </div>
+
+    <!-- Scrollable Content Section -->
+    <div id="item-viewer-container" class="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <p id="item-viewer-loading" class="text-center col-span-full">Loading item data...</p>
+    </div>
+  </div>
+
+  <script src="item-viewer.js"></script>
+</body>
+</html>
