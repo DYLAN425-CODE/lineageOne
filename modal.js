@@ -7,18 +7,18 @@
  */
 
 /**
- * Finds the main content element on the page to apply blur effect.
- * @returns {HTMLElement|null}
+ * Finds the main content element(s) on the page to hide when a modal is open.
+ * @returns {HTMLElement[]} An array of content elements to hide.
  */
-const getContentElementsToBlur = () => {
+const getContentElementsToHide = () => {
     const elements = [
         document.getElementById('main-content'),
         document.getElementById('dashboard-content'),
-        document.getElementById('page-content'),
-        document.getElementById('bg-video-container') // Also blur the video background
+        document.getElementById('page-content')
     ];
     return elements.filter(el => el !== null); // Return only the elements that exist
 };
+
 class Modal {
     /**
      * @param {string} modalId The ID of the modal element in the DOM.
@@ -33,7 +33,8 @@ class Modal {
         this.modalContent = this.modal.querySelector('.character-slot, .ui-panel, .market-panel') || this.modal.firstElementChild;
         this.titleEl = this.modal.querySelector('[id$="-title"]');
         this.messageEl = this.modal.querySelector('[id$="-message"]');
-        this.confirmBtn = this.modal.querySelector('[id$="-confirm-btn"]');
+        // Find buttons ending in -confirm-btn OR -ok-btn
+        this.confirmBtn = this.modal.querySelector('[id$="-confirm-btn"], [id$="-ok-btn"]');
         this.cancelBtn = this.modal.querySelector('[id$="-cancel-btn"]');
         this.confirmInputContainer = this.modal.querySelector('[id$="-input-container"]');
         this.confirmInput = this.modal.querySelector('[id$="-input"]');
@@ -58,12 +59,17 @@ class Modal {
      * @param {Function} [options.onConfirm] - Callback function when confirmed.
      * @param {Function} [options.onCancel] - Callback function when canceled.
      * @param {string} [options.typeToConfirm] - A string the user must type to enable the confirm button.
+     * @param {boolean} [options.allowTitleHTML=false] - If true, allows HTML in the title.
      */
-    show({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'bg-red-800/80', onConfirm, onCancel, typeToConfirm }) {
+    show({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'bg-red-800/80', onConfirm, onCancel, typeToConfirm, allowTitleHTML = false }) {
         this.onConfirm = onConfirm;
         this.onCancel = onCancel;
 
-        if (this.titleEl) this.titleEl.textContent = title;
+        if (this.titleEl) {
+            // Use innerHTML only if explicitly allowed, otherwise use textContent for security
+            allowTitleHTML ? (this.titleEl.innerHTML = title) : (this.titleEl.textContent = title);
+        }
+
         if (this.messageEl) this.messageEl.innerHTML = message;
         if (this.confirmBtn) this.confirmBtn.textContent = confirmText;
         if (this.cancelBtn) this.cancelBtn.textContent = cancelText;
@@ -87,7 +93,9 @@ class Modal {
             if (this.confirmBtn) this.confirmBtn.disabled = false;
         }
 
-        getContentElementsToBlur().forEach(el => el.classList.add('content-blur'));
+        // Hide main page content
+        getContentElementsToHide().forEach(el => el.classList.add('hidden'));
+
         this.modal.classList.remove('hidden');
         setTimeout(() => {
             this.modal.classList.add('opacity-100');
@@ -101,7 +109,9 @@ class Modal {
     }
 
     close() {
-        getContentElementsToBlur().forEach(el => el.classList.remove('content-blur'));
+        // Show main page content again
+        getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+
         this.modal.classList.remove('opacity-100');
         if (this.modalContent) this.modalContent.classList.remove('scale-100');
 
@@ -122,73 +132,96 @@ class Modal {
     _handleKeydown(e) { if (e.key === 'Escape') this._handleCancel(); }
 }
 
+// --- Global Modal Functions ---
+// We define them in the global scope so they can be called from other scripts,
+// but we will initialize the actual modal instance only after the DOM is ready.
+let infoModal;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Instantiate the info modal ONLY when the DOM is fully loaded.
+    try {
+        // This assumes an element with id="info-modal" exists in the HTML.
+        infoModal = new Modal('info-modal');
+    } catch (e) {
+        console.error("Could not initialize the main info-modal. It might be missing from the HTML.", e);
+    }
+});
+
 /**
  * Shows a generic informational modal with a single "OK" button.
  * @param {string} title The title of the modal.
  * @param {string} message The message to display.
- * @param {object} [options] - Optional parameters.
+ * @param {object} [options={}] - Optional parameters.
  * @param {'success' | 'error' | 'info'} [options.type='info'] The type of notification for styling.
  * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
  * @param {number|null} [options.autoClose=null] Milliseconds to wait before auto-closing.
  */
 function showInfoModal(title, message, { type = 'info', onOk, autoClose = null } = {}) {
-    const infoModal = document.getElementById('info-modal');
-    const modalTitle = document.getElementById('info-modal-title');
-    const modalMessage = document.getElementById('info-modal-message');
-    const modalContent = document.getElementById('info-modal-content');
-    const okBtn = document.getElementById('info-modal-ok-btn');
-
-    if (!infoModal || !modalTitle || !modalMessage || !okBtn) {
+    // Fallback for cases where the modal might not be in the DOM or not yet initialized
+    if (!infoModal?.modal) {
         alert(`${title}\n\n${message.replace(/<br\s*\/?>/gi, '\n')}`); // Fallback
         onOk?.();
         return;
     }
 
-    // Icons for different types
     const icons = {
         success: '<span class="text-green-400">✔</span>',
         error: '<span class="text-red-400">✖</span>',
-        info: '' // Remove the info icon
+        info: '', // Removed the 'i' icon for a cleaner look
+        warning: '<span class="text-orange-400">⚠</span>'
     };
 
-    modalTitle.innerHTML = `${icons[type] || icons['info']} ${title}`;
-    modalMessage.innerHTML = message;
+    // Hide the cancel button as this is an info-only modal
+    if (infoModal.cancelBtn) {
+        infoModal.cancelBtn.classList.add('hidden');
+    }
 
-    // Reset colors before applying new ones
-    modalTitle.classList.remove('text-green-400', 'text-red-400', 'text-yellow-400');
-    modalTitle.classList.add(`text-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'yellow'}-400`);
-
-    const elementsToBlur = getContentElementsToBlur();
-    const closeModal = () => {
-        // Clear any auto-close timer
-        if (closeModal.timer) clearTimeout(closeModal.timer);
-        modalContent?.classList.remove('shake'); // Clean up shake class on close
-        infoModal.classList.remove('opacity-100');
-        infoModal.querySelector('#info-modal-content')?.classList.remove('scale-100');
-        setTimeout(() => infoModal.classList.add('hidden'), 300);
-        elementsToBlur.forEach(el => el.classList.remove('content-blur'));
+    let autoCloseTimer = null;
+    const handleOk = () => {
+        if (autoCloseTimer) clearTimeout(autoCloseTimer);
         onOk?.();
     };
 
-    // Auto-close functionality
-    if (autoClose) {
-        closeModal.timer = setTimeout(closeModal, autoClose);
+    const modalTitleWithIcon = `${icons[type] || icons.info} ${title}`;
+
+    infoModal.show({
+        title: modalTitleWithIcon,
+        message: message,
+        confirmText: 'OK',
+        onConfirm: handleOk,
+        onCancel: handleOk, // Also call onOk if closed via Esc or background click
+        allowTitleHTML: true // Explicitly allow HTML for the icon
+    });
+
+    // If it's an error, add the shake animation
+    if (type === 'error' && infoModal.modalContent) {
+        infoModal.modalContent.classList.add('shake');
+        setTimeout(() => infoModal.modalContent.classList.remove('shake'), 600);
     }
 
-    okBtn.addEventListener('click', closeModal, { once: true });
-    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) closeModal(); }, { once: true });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); }, { once: true });
-    
-    elementsToBlur.forEach(el => el.classList.add('content-blur'));
-    infoModal.classList.remove('hidden');
-    setTimeout(() => {
-        infoModal.classList.add('opacity-100');
-        modalContent?.classList.add('scale-100');
-        // If it's an error, add the shake animation
-        if (type === 'error' && modalContent) {
-            modalContent.classList.add('shake');
-            // Remove the class after the animation so it can be re-triggered
-            setTimeout(() => modalContent.classList.remove('shake'), 600);
-        }
-    }, 10);
+    if (autoClose) {
+        autoCloseTimer = setTimeout(() => infoModal.close(), autoClose);
+    }
+}
+
+/**
+ * A convenience wrapper for showing a success modal.
+ * @param {string} title The title of the modal.
+ * @param {string} message The message to display.
+ * @param {object} [options] - Optional parameters.
+ * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
+ * @param {number|null} [options.autoClose=null] Milliseconds to wait before auto-closing.
+ */
+function showSuccessModal(title, message, options = {}) {
+    showInfoModal(title, message, { ...options, type: 'success' });
+}
+
+/**
+ * A convenience wrapper for showing a warning modal.
+ * @param {string} title The title of the modal.
+ * @param {string} message The message to display.
+ * @param {object} [options={}] - Optional parameters.
+ */
+function showWarningModal(title, message, options = {}) {
+    showInfoModal(title, message, { ...options, type: 'warning' });
 }

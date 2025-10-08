@@ -31,6 +31,40 @@ async function loadServerProperties() {
         return defaultProps;
     }
 }
+
+/**
+ * Formats an ISO date string into a relative time string (e.g., "5 minutes ago").
+ * @param {string | null} isoString The ISO date string to format.
+ * @returns {string} A formatted relative time string.
+ */
+function formatTimeAgo(isoString) {
+    if (!isoString) {
+        return 'Never';
+    }
+
+    const date = new Date(isoString);
+    const now = new Date();
+    const seconds = Math.round((now - date) / 1000);
+
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+
+    if (seconds < 30) return 'Just now';
+
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+            return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+        }
+    }
+    return `${Math.floor(seconds)} seconds ago`;
+}
 // ========================================================================
 //  DOM CONTENT LOADED - All the code inside this function runs after the page has finished loading.
 // ========================================================================
@@ -96,9 +130,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userCharacters[i]) {
             // If a character exists for this slot, display their info
             const char = userCharacters[i];
+            const lastOnline = formatTimeAgo(char.lastOnline);
             slotDiv.innerHTML = `
                 <h3 class="text-2xl font-bold text-white text-shadow">${char.name}</h3>
                 <p class="text-gray-300 mt-1">Lv. 1 ${char.class}</p>
+                <p class="text-xs text-gray-400 mt-2">Last online: ${lastOnline}</p>
                 <div class="flex gap-2 mt-4">
                     <button data-char-name="${char.name}" class="enter-game-btn bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">Enter Game</button>
                     <button data-char-name="${char.name}" class="delete-char-btn bg-red-800/80 border border-red-600 px-4 py-2 rounded-lg hover:bg-red-700/80 transition text-sm">Delete</button>
@@ -308,6 +344,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const charName = target.dataset.charName;
                 const characterToEnter = userCharacters.find(c => c.name === charName);
                 if (characterToEnter) {
+                    // Update last online status before entering
+                    characterToEnter.lastOnline = new Date().toISOString();
+                    
+                    // Save the updated character data back to the main list
+                    const allChars = JSON.parse(localStorage.getItem('characters')) || [];
+                    const charIndex = allChars.findIndex(c => c.name === charName);
+                    if (charIndex !== -1) allChars[charIndex] = characterToEnter;
+                    localStorage.setItem('characters', JSON.stringify(allChars));
+
                     localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
                     showCharacterDetails(characterToEnter);
                 }

@@ -346,6 +346,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('logout-button')?.addEventListener('click', () => {
+    // Update lastOnline for the active character before logging out
+    const activeChar = JSON.parse(localStorage.getItem('activeCharacter'));
+    if (activeChar) {
+        const allChars = JSON.parse(localStorage.getItem('characters')) || [];
+        const charIndex = allChars.findIndex(c => c.name === activeChar.name);
+        if (charIndex !== -1) {
+            allChars[charIndex].lastOnline = new Date().toISOString();
+            localStorage.setItem('characters', JSON.stringify(allChars));
+        }
+    }
+
     localStorage.removeItem('session');
     window.location.reload(); // Reload the page to reflect the logged-out state
   });
@@ -834,7 +845,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           showImage(index);
           lightbox.classList.remove('hidden');
           // Use a timeout to allow the display property to apply before transitioning opacity
-          mainContent?.classList.add('content-blur');
+          document.getElementById('main-content')?.classList.add('hidden');
           setTimeout(() => lightbox.classList.add('open'), 10);
           document.addEventListener('keydown', handleKeyPress);
         }
@@ -842,7 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const closeLightbox = () => {
-      mainContent?.classList.remove('content-blur');
+      document.getElementById('main-content')?.classList.remove('hidden');
       lightbox.classList.remove('open');
       document.removeEventListener('keydown', handleKeyPress);
       // Wait for the transition to finish before hiding it

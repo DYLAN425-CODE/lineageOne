@@ -5,29 +5,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allItems = [];
 
     /**
-     * A robust parser for comma-separated values, handling quoted strings.
+     * A robust parser for SQL INSERT values using a regular expression.
+     * It correctly handles numbers, NULL, and quoted strings.
      */
-    function parseCsvLine(line) {
+    function parseSqlValues(valuesString) {
+        // This regex finds numbers, 'strings' (handling escaped quotes ''), or NULL, separated by commas.
+        const regex = /'((?:[^']|'')*)'|(\d+)|(NULL)/g;
         const values = [];
-        let current = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === "'" && (i === 0 || line[i - 1] !== '\\')) {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
+        let match;
+        while ((match = regex.exec(valuesString)) !== null) {
+            // match[1] is the captured string, match[2] is the number, match[3] is NULL
+            const value = match[1] ?? match[2] ?? match[3];
+            values.push(value);
         }
-        values.push(current.trim());
         return values.map(v => {
-            if (v.startsWith("'") && v.endsWith("'")) {
-                return v.substring(1, v.length - 1);
-            }
-            if (v === 'NULL') return null;
+            if (v === 'NULL' || v === null) return null;
             return isNaN(Number(v)) ? v : Number(v);
         });
     }
@@ -63,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (const line of lines) {
                 if (line.toUpperCase().startsWith('INSERT INTO `ARMOR` VALUES')) {
                     const valuesString = line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'));
-                    const values = parseCsvLine(valuesString);
+                    const values = parseSqlValues(valuesString);
                     const item = {};
                     armorColumns.forEach((col, index) => {
                         item[col] = values[index];

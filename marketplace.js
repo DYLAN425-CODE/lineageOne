@@ -18,11 +18,12 @@ async function loadServerProperties() {
             if (line && !line.startsWith('#')) {
                 const [key, value] = line.split('=').map(s => s.trim());
                 if (key && value !== undefined) {
-                    // Keep JSON strings as strings
+                    // Process properties, ensuring correct type conversion
                     if (key.endsWith('_JSON')) {
                         properties[key] = value;
-                    }
-                    if (value.toLowerCase() === 'true') properties[key] = true;
+                    } else if (value.toLowerCase() === 'true') {
+                        properties[key] = true;
+                    } 
                     else if (value.toLowerCase() === 'false') properties[key] = false;
                     else if (!isNaN(Number(value))) properties[key] = Number(value);
                     else properties[key] = value;
@@ -35,6 +36,42 @@ async function loadServerProperties() {
         return defaultProps;
     }
 }
+
+/**
+ * Manages user session and active character initialization.
+ * @returns {object|null} The active character object or null if session is invalid.
+ */
+function initializeUserSession() {
+    const session = JSON.parse(localStorage.getItem('session'));
+    if (!session) {
+        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => window.location.href = 'index.html' });
+        return null;
+    }
+
+    if (Date.now() > session.expiry) {
+        localStorage.removeItem('session');
+        showInfoModal('Session Expired', 'Your session has expired. Please log in again.', { onOk: () => window.location.href = 'index.html' });
+        return null;
+    }
+
+    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+    const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
+
+    let activeCharacter = null;
+    const storedActiveCharacter = JSON.parse(localStorage.getItem('activeCharacter'));
+    if (storedActiveCharacter && storedActiveCharacter.owner.toLowerCase() === session.username.toLowerCase()) {
+        activeCharacter = userCharacters.find(c => c.name === storedActiveCharacter.name);
+    }
+
+    if (!activeCharacter && userCharacters.length > 0) {
+        activeCharacter = userCharacters[0];
+        localStorage.setItem('activeCharacter', JSON.stringify(activeCharacter));
+    }
+
+    // Return both active character and the list of user's characters for the dropdown
+    return { activeCharacter, userCharacters };
+}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -54,54 +91,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // This check now runs before the session check.
     if (!BUY_ENABLED && !SELL_ENABLED) {
         // Show a modal instead of just changing the panel content.
-        new Modal('notification-modal').show({
-            title: 'Marketplace Unavailable',
-            message: 'The marketplace is temporarily disabled. Please check back later.',
-            confirmText: 'Return to Dashboard',
-            onConfirm: () => {
-                window.location.href = 'dashboard.html';
-            }
-        });
+        showInfoModal('Marketplace Unavailable', 'The marketplace is temporarily disabled. Please check back later.', { onOk: () => window.location.href = 'dashboard.html' });
         return; // Stop further script execution.
     }
 
-    // ========================================================================
-    //  SESSION & CHARACTER MANAGEMENT
-    // ========================================================================
-    const session = JSON.parse(localStorage.getItem('session'));
-    if (!session) {
-        // Case 1: User was never logged in. Use the local notification modal.
-        new Modal('notification-modal').show({ title: 'Login Required', message: 'You need to log in to access the marketplace.', onConfirm: () => {
-            window.location.href = 'index.html';
-        }, confirmText: 'OK' });
-        return; // Stop script execution
-    }
+    const sessionData = initializeUserSession();
+    if (!sessionData) return; // Stop if session is invalid
 
-    if (Date.now() > session.expiry) {
-        // Case 2: User's session has expired.
-        localStorage.removeItem('session');
-        new Modal('notification-modal').show({ title: 'Session Expired', message: 'Your session has expired. Please log in again.', onConfirm: () => {
-            window.location.href = 'index.html';
-        }, confirmText: 'OK' });
-        return;
-    }
-
-    let activeCharacter = null;
-    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-    const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
-
-    // Prioritize the character explicitly set as active from the dashboard
-    const storedActiveCharacter = JSON.parse(localStorage.getItem('activeCharacter'));
-    if (storedActiveCharacter && storedActiveCharacter.owner.toLowerCase() === session.username.toLowerCase()) {
-        // Ensure the stored active character data is fresh
-        activeCharacter = userCharacters.find(c => c.name === storedActiveCharacter.name);
-    }
-
-    // If no active character was found, default to the user's first character
-    if (!activeCharacter && userCharacters.length > 0) {
-        activeCharacter = userCharacters[0];
-        localStorage.setItem('activeCharacter', JSON.stringify(activeCharacter)); // Set it for consistency
-    }
+    let { activeCharacter, userCharacters } = sessionData;
 
     // ========================================================================
     //  MARKETPLACE STATE & DOM ELEMENTS
@@ -132,83 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), delay);
         };
-    }
-
-    // ========================================================================
-    //  MODAL HANDLERS (Confirmation, Quantity, Notification)
-    // ========================================================================
-    function showConfirmModal({ title, message, onConfirm }) {
-        const modal = document.getElementById('confirm-modal');
-        const modalTitle = document.getElementById('confirm-modal-title');
-        const modalMessage = document.getElementById('confirm-modal-message');
-        const confirmBtn = document.getElementById('confirm-modal-confirm-btn');
-        const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
-
-        modalTitle.textContent = title;
-        modalMessage.innerHTML = message;
-
-        const closeModal = () => {
-            modal.classList.remove('opacity-100');
-            modal.querySelector('#confirm-modal-content')?.classList.remove('scale-100');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        };
-
-        const handleConfirm = () => {
-            onConfirm();
-            closeModal();
-        };
-
-        confirmBtn.onclick = handleConfirm;
-        cancelBtn.onclick = closeModal;
-        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-
-        modal.classList.remove('hidden');
-        setTimeout(() => { modal.classList.add('opacity-100'); modal.querySelector('#confirm-modal-content')?.classList.add('scale-100'); }, 10);
-    }
-
-    function showQuantityModal({ action, item, maxQuantity = Infinity, onConfirm }) {
-        const modal = document.getElementById('quantity-modal');
-        const modalTitle = document.getElementById('quantity-modal-title');
-        const itemNameEl = document.getElementById('quantity-modal-item-name');
-        const input = document.getElementById('quantity-input');
-        const totalPriceEl = document.getElementById('quantity-total-price');
-        const confirmBtn = document.getElementById('quantity-confirm-btn');
-        const cancelBtn = document.getElementById('quantity-cancel-btn');
-
-        modalTitle.textContent = `${action} Item`;
-        itemNameEl.textContent = item.name;
-        input.value = 1;
-        input.max = maxQuantity;
-
-        const updatePrice = () => {
-            const quantity = parseInt(input.value) || 0;
-            const total = (item.price || 0) * quantity;
-            totalPriceEl.textContent = `${total.toLocaleString()} Adena`;
-        };
-
-        updatePrice();
-        input.oninput = updatePrice;
-
-        const closeModal = () => {
-            modal.classList.remove('opacity-100');
-            modal.querySelector('#quantity-modal-content')?.classList.remove('scale-100');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        };
-
-        const handleConfirm = () => {
-            const quantity = parseInt(input.value);
-            if (quantity > 0 && quantity <= maxQuantity) {
-                onConfirm(quantity);
-                closeModal();
-            }
-        };
-
-        confirmBtn.onclick = handleConfirm;
-        cancelBtn.onclick = closeModal;
-        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-
-        modal.classList.remove('hidden');
-        setTimeout(() => { modal.classList.add('opacity-100'); modal.querySelector('#quantity-modal-content')?.classList.add('scale-100'); }, 10);
     }
 
     // ========================================================================
@@ -310,15 +230,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const confirmAndBuy = (quantity) => {
             const totalPrice = (itemToBuy.price * quantity).toLocaleString();
-            showConfirmModal({
+            new Modal('confirm-modal').show({
                 title: 'Confirm Purchase',
                 message: `Are you sure you want to buy ${quantity}x ${escapeHTML(itemToBuy.name)} for ${totalPrice} Adena?`,
                 onConfirm: () => buyItems(itemToBuy, quantity)
             });
         };
 
-        showQuantityModal({
-            action: 'Buy', item: itemToBuy,
+        new Modal('quantity-modal').show({
+            title: 'Buy Item',
+            item: itemToBuy,
+            onReady: (modal) => {
+                const input = modal.element.querySelector('#quantity-input');
+                const totalPriceEl = modal.element.querySelector('#quantity-total-price');
+                input.oninput = () => {
+                    totalPriceEl.textContent = `${(itemToBuy.price || 0) * (parseInt(input.value) || 0)} Adena`;
+                };
+            },
             onConfirm: (quantity) => confirmAndBuy(quantity)
         });
     }
@@ -329,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalPrice = itemToBuy.price * quantity;
 
         if (playerAdena < totalPrice) {
-            new Modal('notification-modal').show({ title: 'Not Enough Adena', message: 'You do not have enough Adena for this purchase.', confirmText: 'OK' });
+            showInfoModal('Not Enough Adena', 'You do not have enough Adena for this purchase.', { type: 'error' });
             return;
         }
 
@@ -349,7 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         saveCharacterState();
         renderSellPanel();
-        new Modal('notification-modal').show({ title: 'Purchase Successful', message: `You bought ${totalQuantityToAdd.toLocaleString()}x ${itemToBuy.name} for ${totalPrice.toLocaleString()} Adena.`, confirmText: 'OK' });
+        showSuccessModal('Purchase Successful', `You bought ${totalQuantityToAdd.toLocaleString()}x ${itemToBuy.name} for ${totalPrice.toLocaleString()} Adena.`);
     }
 
     function handleSellItem(event) {
@@ -362,20 +290,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sellPrice = itemToSell.price || 0;
             const totalValue = (sellPrice * quantity).toLocaleString();
             const displayName = itemToSell.enchantment !== undefined ? `+${itemToSell.enchantment} ${itemToSell.name}` : itemToSell.name;
-
-            showConfirmModal({
+            
+            new Modal('confirm-modal').show({
                 title: 'Confirm Sale',
                 message: `Are you sure you want to sell ${quantity}x ${escapeHTML(displayName)} for ${totalValue} Adena?`,
                 onConfirm: () => sellItems(itemToSell, quantity)
             });
         };
 
-        if (!itemToSell.stackable || itemToSell.quantity === 1) {
+        if (itemToSell.stackable === false || itemToSell.quantity === 1) {
             confirmAndSell(1);
         } else {
-            showQuantityModal({
-                action: 'Sell',
+            new Modal('quantity-modal').show({
+                title: 'Sell Item',
                 item: itemToSell,
+                onReady: (modal) => {
+                    const input = modal.element.querySelector('#quantity-input');
+                    const totalPriceEl = modal.element.querySelector('#quantity-total-price');
+                    input.max = itemToSell.quantity;
+                    input.oninput = () => { totalPriceEl.textContent = `${(itemToSell.price || 0) * (parseInt(input.value) || 0)} Adena`; };
+                },
                 maxQuantity: itemToSell.quantity,
                 onConfirm: (quantity) => confirmAndSell(quantity)
             });
@@ -403,31 +337,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         saveCharacterState();
         renderSellPanel();
-        new Modal('notification-modal').show({ title: 'Sale Successful', message: `You sold ${quantityToSell.toLocaleString()}x ${itemToSell.name} for ${totalSaleValue.toLocaleString()} Adena.`, confirmText: 'OK' });
+        showSuccessModal('Sale Successful', `You sold ${quantityToSell.toLocaleString()}x ${itemToSell.name} for ${totalSaleValue.toLocaleString()} Adena.`);
     }
 
     function handleCombineItems() {
         if (!activeCharacter) return;
-        const stackableItems = new Map();
-        const nonStackableItems = [];
-
-        activeCharacter.inventory.forEach(item => {
-            if (item.stackable === true) {
-                const key = `${item.name}_${item.enchantment || 0}`;
-                if (stackableItems.has(key)) {
-                    stackableItems.get(key).quantity += item.quantity;
+    
+        const combined = new Map();
+        const nonStackableItems = activeCharacter.inventory.filter(item => item.stackable !== true);
+    
+        activeCharacter.inventory
+            .filter(item => item.stackable === true)
+            .forEach(item => {
+                const key = `${item.name}_${item.enchantment || 0}`; // Group by name and enchant level
+                const existing = combined.get(key);
+                if (existing) {
+                    existing.quantity += item.quantity;
                 } else {
-                    stackableItems.set(key, { ...item });
+                    combined.set(key, { ...item, id: generateUUID() }); // Create a new item with a new ID
                 }
-            } else {
-                nonStackableItems.push(item);
-            }
-        });
-
+            });
+    
+        activeCharacter.inventory = [...nonStackableItems, ...Array.from(combined.values())];
         activeCharacter.inventory = [...nonStackableItems, ...Array.from(stackableItems.values())];
         saveCharacterState();
         renderSellPanel();
-        new Modal('notification-modal').show({ title: 'Items Combined', message: 'Your stackable items have been combined.', confirmText: 'OK' });
+        showSuccessModal('Items Combined', 'Your stackable items have been combined.');
     }
 
     function renderCharacterSelector() {

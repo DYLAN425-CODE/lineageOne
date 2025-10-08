@@ -463,7 +463,7 @@ html {
   background-color: rgba(10, 10, 20, 0.4);
   border: none;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(3px);
+  /* backdrop-filter: blur(3px); */
   border-radius: 0.5rem;
   padding: 2.5rem;
 }
@@ -475,7 +475,7 @@ html {
     background-color: rgba(10, 10, 20, 0.4);
     border: none;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(3px);
+    /* backdrop-filter: blur(3px); */
     border-radius: 0.5rem;
     padding: 2.5rem;
     background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
@@ -975,23 +975,65 @@ html {
 /* ========================= MODAL BASE STYLES ========================== */
 /* ======================================================================== */
 
-/* Generic Modal open state */
+.modal {
+  /* Base State: Hidden */
+  display: none; /* Use display to prevent interaction when hidden */
+  position: fixed;
+  z-index: 1000; /* Ensure it's on top of other content */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Allow scrolling if content is too long */
+  background-color: rgba(0, 0, 0, 0.9); /* Dark overlay - increased from 0.75 */
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  /* Center the modal content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Open State: Visible */
 .modal.open {
+  display: flex; /* Change from none to flex to enable visibility */
   opacity: 1;
 }
+
+.modal-content {
+  position: relative;
+  /* Use the existing ui-panel styles for a consistent look */
+  background-color: rgba(10, 10, 20, 0.4);
+  border: none;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 500px; /* Default max-width */
+  /* Animation for appearing */
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-in-out;
+}
+
+/* Open State for Content */
 .modal.open .modal-content {
   transform: scale(1);
+  opacity: 1;
 }
 
-/* Specific Modal IDs from dashboard.html and marketplace.html */
-#logout-modal.open #logout-modal-content,
-#confirm-modal.open #confirm-modal-content,
-#notification-modal.open #notification-modal-content {
-    transform: scale(1);
+/* Close Button */
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  color: #aaa;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-#logout-modal.open,
-#confirm-modal.open,
-#notification-modal.open {
-    opacity: 1;
+.modal-close:hover {
+  color: #fff;
 }
