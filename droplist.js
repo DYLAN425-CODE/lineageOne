@@ -1,42 +1,7 @@
-/**
- * Fetches and parses the server.properties file.
- * @returns {Promise<object>} A promise that resolves to an object with the server properties.
- */
-async function loadServerProperties() {
-    // Default values in case the file is missing or fails to load
-    const defaultProps = { DROPLIST_ITEMS_PER_PAGE: 300, DROPLIST_BACKGROUND_VIDEO_PATH: 'media/droplist.mp4', FAVICON_PATH: 'icon/cs.ico', MOB_NAMES_FILE_PATH: 'droplist_txt/mob.txt', ITEM_NAMES_FILE_PATH: 'droplist_txt/itemname.txt', MOB_LEVELS_FILE_PATH: 'droplist_txt/moblevel.txt' };
-    try {
-        const response = await fetch('server.properties');
-        if (!response.ok) {
-            console.warn('server.properties not found. Using default droplist settings.');
-            return defaultProps;
-        }
-        const text = await response.text();
-        const properties = {};
-        text.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const [key, value] = line.split('=').map(s => s.trim());
-                if (key && value !== undefined) {
-                    // Keep JSON strings as strings
-                    if (key.endsWith('_JSON')) {
-                        properties[key] = value;
-                    }
-                    if (value.toLowerCase() === 'true') properties[key] = true;
-                    else if (value.toLowerCase() === 'false') properties[key] = false;
-                    else if (!isNaN(Number(value))) properties[key] = Number(value);
-                    else properties[key] = value;
-                }
-            }
-        });
-        return { ...defaultProps, ...properties };
-    } catch (error) {
-        console.error('Failed to load server.properties:', error);
-        return defaultProps;
-    }
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const droplistSection = document.getElementById('droplist');
+    if (!droplistSection) return;
 
-document.addEventListener('DOMContentLoaded', async () => {
     let sortState = { key: 'item', order: 'asc' }; // Initial sort state
     let fullDropList = [];      // Stores the complete, unfiltered list
     let currentList = [];       // Stores the currently filtered list for pagination
@@ -44,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let itemsPerPage = 300;     // Default value, will be updated by server.properties
     let isLoaded = false;
 
-    function escapeHTML(str) {
+    const escapeHTML = (str) => {
         const p = document.createElement('p');
         p.appendChild(document.createTextNode(str));
         return p.innerHTML;
@@ -56,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @param {number} wait The number of milliseconds to delay.
      * @returns {Function} The new debounced function.
      */
-    function debounce(func, wait) {
+    const debounce = (func, wait) => {
         let timeout;
         return function executedFunction(...args) {
             const later = () => { clearTimeout(timeout); func(...args); };
@@ -68,10 +33,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Loads the drop list data from the text files.
      */
-    async function loadDropList() {
-        // The serverProps are now loaded at the top level, so we just use itemsPerPage.
-        // This function can now focus solely on loading the droplist data.
+    const loadDropList = async () => {
         const loadingText = document.getElementById('droplist-loading');
+        const serverProps = window.serverProperties;
+
         try {
             const [mobsRes, itemsRes, levelsRes] = await Promise.all([
                 fetch(serverProps.MOB_NAMES_FILE_PATH),
@@ -123,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @param {string} key The key to sort by (e.g., 'item', 'mob').
      * @param {boolean} initialSort Whether this is the initial sort.
      */
-    function sortDropList(key, initialSort = false) {
+    const sortDropList = (key, initialSort = false) => {
         if (!isLoaded) return;
 
         if (!initialSort && sortState.key === key) {
@@ -149,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Renders the drop list items on the page.
      */
-    function renderPage() {
+    const renderPage = () => {
         const container = document.getElementById('droplist-container');
         const searchInput = document.getElementById('droplist-search');
         if (!container || !searchInput) return;
@@ -192,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Renders the pagination controls for the drop list.
      */
-    function renderPaginationControls() {
+    const renderPaginationControls = () => {
         const controlsContainer = document.getElementById('pagination-controls');
         if (!controlsContainer) return;
 
@@ -201,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (totalPages <= 1) return; // Don't show controls if there's only one page
 
-        const prevButton = document.createElement('button');
+        const prevButton = document.createElement('button'); // Use action-btn btn-gray
         prevButton.textContent = 'Previous';
         prevButton.className = 'bg-gray-700 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed';
         prevButton.disabled = currentPage === 1;
@@ -232,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Renders the sort controls for the drop list.
      */
-    function renderSortControls() {
+    const renderSortControls = () => {
         const container = document.getElementById('sort-controls');
         if (!container) return;
         container.innerHTML = `
@@ -247,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Updates the UI of the sort buttons.
      */
-    function updateSortButtonUI() {
+    const updateSortButtonUI = () => {
         const itemBtn = document.getElementById('sort-item-btn');
         const mobBtn = document.getElementById('sort-mob-btn');
         if (!itemBtn || !mobBtn) return;
@@ -260,38 +225,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         (sortState.key === 'item' ? mobBtn : itemBtn).textContent = `Sort by ${sortState.key === 'item' ? 'Mob' : 'Item'}`;
     }
 
-    // Initial setup
-    const serverProps = await loadServerProperties();
-    itemsPerPage = serverProps.DROPLIST_ITEMS_PER_PAGE;
+    const initializeDroplist = async () => {
+        if (isLoaded) return; // Prevent re-initialization
 
-    // Set the background video from server properties
-    const bgVideo = document.querySelector('#bg-video-container video');
-    if (bgVideo && serverProps.DROPLIST_BACKGROUND_VIDEO_PATH) {
-        bgVideo.src = serverProps.DROPLIST_BACKGROUND_VIDEO_PATH;
-    }
+        const serverProps = window.serverProperties;
+        itemsPerPage = serverProps.DROPLIST_ITEMS_PER_PAGE;
 
-    // --- Favicon ---
-    if (serverProps.FAVICON_PATH) {
-        const faviconIco = document.getElementById('favicon-ico');
-        const faviconShortcut = document.getElementById('favicon-shortcut');
-        if (faviconIco) faviconIco.href = serverProps.FAVICON_PATH;
-        if (faviconShortcut) faviconShortcut.href = serverProps.FAVICON_PATH;
-    }
+        await loadDropList();
+        renderSortControls();
 
-    loadDropList();
-    renderSortControls();
+        const searchInput = document.getElementById('droplist-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce((e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                currentList = fullDropList.filter(drop =>
+                    drop.item.toLowerCase().includes(searchTerm) ||
+                    drop.mob.toLowerCase().includes(searchTerm)
+                );
+                sortDropList(sortState.key, true);
+            }, 300));
+        }
+        console.log('[Debug] Droplist initialized.');
+    };
 
-    const searchInput = document.getElementById('droplist-search');
-    if (searchInput) {
-        // Use debounce to prevent the search from firing on every keystroke
-        searchInput.addEventListener('input', debounce((e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            currentList = fullDropList.filter(drop =>
-                drop.item.toLowerCase().includes(searchTerm) ||
-                drop.mob.toLowerCase().includes(searchTerm)
-            );
-            // Re-sort the filtered list without changing the sort order direction
-            sortDropList(sortState.key, true);
-        }, 300)); // 300ms delay
-    }
+    // Use a MutationObserver to initialize the droplist only when it becomes visible.
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class' && !droplistSection.classList.contains('hidden')) {
+                initializeDroplist();
+            }
+        }
+    });
+    observer.observe(droplistSection, { attributes: true });
 });

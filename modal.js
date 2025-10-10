@@ -25,6 +25,7 @@ class Modal {
      */
     constructor(modalId) {
         this.modal = document.getElementById(modalId);
+        console.log(`[Modal] Initializing instance for #${modalId}`);
         if (!this.modal) {
             throw new Error(`Modal with ID "${modalId}" not found.`);
         }
@@ -62,6 +63,7 @@ class Modal {
      * @param {boolean} [options.allowTitleHTML=false] - If true, allows HTML in the title.
      */
     show({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'bg-red-800/80', onConfirm, onCancel, typeToConfirm, allowTitleHTML = false }) {
+        console.log(`[Modal] Showing #${this.modal.id} with title: "${title}"`);
         this.onConfirm = onConfirm;
         this.onCancel = onCancel;
 
@@ -109,8 +111,16 @@ class Modal {
     }
 
     close() {
-        // Show main page content again
-        getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+        console.log(`[Modal] Closing #${this.modal.id}`);
+
+        // Show main page content again, but only if no other modal or form is open.
+        const anyFormOpen = [
+            'loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord'
+        ].some(id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden'));
+
+        if (!anyFormOpen) {
+            getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+        }
 
         this.modal.classList.remove('opacity-100');
         if (this.modalContent) this.modalContent.classList.remove('scale-100');
@@ -126,9 +136,26 @@ class Modal {
         setTimeout(() => this.modal.classList.add('hidden'), 300);
     }
 
-    _handleConfirm() { this.onConfirm?.(); this.close(); }
-    _handleCancel() { this.onCancel?.(); this.close(); }
-    _handleBackgroundClick(e) { if (e.target === this.modal) this._handleCancel(); }
+    _handleConfirm() {
+        console.log(`[Modal] #${this.modal.id} confirmed.`);
+        this.onConfirm?.();
+        // Always close the modal after confirmation, even if onConfirm is not set.
+        // This prevents the user from getting stuck.
+        if (this.modal.classList.contains('hidden') === false) {
+            this.close();
+        }
+    }
+    _handleCancel() {
+        console.log(`[Modal] #${this.modal.id} canceled.`);
+        this.onCancel?.();
+        this.close();
+    }
+    _handleBackgroundClick(e) {
+        if (e.target === this.modal) {
+            console.log(`[Modal] #${this.modal.id} canceled via background click.`);
+            this._handleCancel();
+        }
+    }
     _handleKeydown(e) { if (e.key === 'Escape') this._handleCancel(); }
 }
 
@@ -136,12 +163,19 @@ class Modal {
 // We define them in the global scope so they can be called from other scripts,
 // but we will initialize the actual modal instance only after the DOM is ready.
 let infoModal;
+let notificationModal;
+let confirmModal;
+let quantityModal;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Instantiate the info modal ONLY when the DOM is fully loaded.
     try {
         // This assumes an element with id="info-modal" exists in the HTML.
         infoModal = new Modal('info-modal');
+        confirmModal = new Modal('confirm-modal');
+        quantityModal = new Modal('quantity-modal');
+        // Instantiate the new notification modal
+        notificationModal = new Modal('notification-modal');
     } catch (e) {
         console.error("Could not initialize the main info-modal. It might be missing from the HTML.", e);
     }
@@ -182,7 +216,8 @@ function showInfoModal(title, message, { type = 'info', onOk, autoClose = null }
         onOk?.();
     };
 
-    const modalTitleWithIcon = `${icons[type] || icons.info} ${title}`;
+    // Join icon and title with a space, but only if the icon exists.
+    const modalTitleWithIcon = [icons[type] || icons.info, title].filter(Boolean).join(' ');
 
     infoModal.show({
         title: modalTitleWithIcon,
@@ -224,4 +259,109 @@ function showSuccessModal(title, message, options = {}) {
  */
 function showWarningModal(title, message, options = {}) {
     showInfoModal(title, message, { ...options, type: 'warning' });
+}
+
+/**
+ * Shows a dedicated notification modal. This is separate from showInfoModal to avoid conflicts.
+ * @param {string} title The title of the modal.
+ * @param {string} message The message to display.
+ * @param {object} [options={}] - Optional parameters.
+ * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
+ */
+function showNotification(title, message, { onOk } = {}) {
+    // Fallback for cases where the modal might not be in the DOM or not yet initialized
+    if (!notificationModal?.modal) {
+        alert(`${title}\n\n${message.replace(/<br\s*\/?>/gi, '\n')}`); // Fallback
+        onOk?.();
+        return;
+    }
+
+    // Hide the cancel button if it exists
+    if (notificationModal.cancelBtn) {
+        notificationModal.cancelBtn.classList.add('hidden');
+    }
+
+    notificationModal.show({
+        title: title,
+        message: message,
+        onConfirm: onOk,
+    });
+}
+
+/**
+ * Shows a generic confirmation modal with confirm/cancel buttons.
+ * @param {object} options
+ * @param {string} options.title - The title of the modal.
+ * @param {string} options.message - The message content (can be HTML).
+ * @param {string} [options.confirmText='Confirm'] - Text for the confirm button.
+ * @param {string} [options.cancelText='Cancel'] - Text for the cancel button.
+ * @param {Function} [options.onConfirm] - Callback function when confirmed.
+ * @param {Function} [options.onCancel] - Callback function when canceled.
+ * @param {string} [options.typeToConfirm] - A string the user must type to enable the confirm button.
+ */
+function showConfirmModal({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel, typeToConfirm }) {
+    if (!confirmModal?.modal) {
+        if (confirm(message.replace(/<[^>]*>?/gm, ''))) { // Basic fallback
+            onConfirm?.();
+        } else {
+            onCancel?.();
+        }
+        return;
+    }
+
+    confirmModal.show({
+        title: title,
+        message: message,
+        confirmText: confirmText,
+        cancelText: cancelText,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
+        typeToConfirm: typeToConfirm,
+        allowTitleHTML: true
+    });
+}
+
+/**
+ * Shows a modal for quantity input.
+ * @param {object} options
+ * @param {string} options.title - The title of the modal.
+ * @param {object} options.item - The item object, containing name, price, etc.
+ * @param {number} [options.maxQuantity] - The maximum allowed quantity.
+ * @param {Function} [options.onConfirm] - Callback function with the chosen quantity.
+ * @param {Function} [options.onCancel] - Callback function when canceled.
+ * @param {Function} [options.onReady] - Callback function after the modal is shown, receives the modal element.
+ */
+function showQuantityModal({ title, item, maxQuantity, onConfirm, onCancel, onReady }) {
+    if (!quantityModal?.modal) {
+        const quantity = parseInt(prompt(`Enter quantity for ${item.name}:`, "1"), 10);
+        if (!isNaN(quantity) && quantity > 0) {
+            onConfirm?.(quantity);
+        }
+        return;
+    }
+
+    const itemNameEl = quantityModal.modal.querySelector('#quantity-modal-item-name');
+    const inputEl = quantityModal.modal.querySelector('#quantity-input');
+    const totalPriceEl = quantityModal.modal.querySelector('#quantity-total-price');
+
+    if (itemNameEl) itemNameEl.textContent = item.name;
+    if (inputEl) {
+        inputEl.value = 1;
+        inputEl.max = maxQuantity || '';
+        inputEl.oninput = () => {
+            if (totalPriceEl) totalPriceEl.textContent = `${(item.price || 0) * (parseInt(inputEl.value) || 0)} Adena`;
+        };
+        // Trigger it once to set the initial total
+        inputEl.oninput();
+    }
+
+    quantityModal.show({
+        title: title,
+        message: `How many would you like to ${title.toLowerCase().includes('buy') ? 'buy' : 'sell'}?`,
+        onConfirm: () => onConfirm?.(parseInt(inputEl.value, 10)),
+        onCancel: onCancel,
+        allowTitleHTML: true
+    });
+
+    onReady?.(quantityModal.modal);
 }

@@ -1,162 +1,31 @@
-/**
- * Fetches and parses the server.properties file.
- * @returns {Promise<object>} A promise that resolves to an object with the server properties.
- */
-async function loadServerProperties() {
-    // Default values in case the file is missing or fails to load
-    const defaultProps = { MAX_CHARACTER_SLOTS: 6, DASHBOARD_BACKGROUND_IMAGE_PATH: 'images/bg1.png', FAVICON_PATH: 'icon/cs.ico', RING3_LEVEL_REQUIREMENT: 76, RING4_LEVEL_REQUIREMENT: 81 };
-    try {
-        const response = await fetch('server.properties');
-        if (!response.ok) {
-            console.warn('server.properties not found. Using default dashboard settings.');
-            return defaultProps;
-        }
-        const text = await response.text();
-        const properties = {};
-        text.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const [key, value] = line.split('=').map(s => s.trim());
-                if (key && value !== undefined) {
-                    if (value.toLowerCase() === 'true') properties[key] = true;
-                    else if (value.toLowerCase() === 'false') properties[key] = false;
-                    else if (!isNaN(Number(value))) properties[key] = Number(value);
-                    else properties[key] = value;
-                }
-            }
-        });
-        return { ...defaultProps, ...properties };
-    } catch (error) {
-        console.error('Failed to load server.properties:', error);
-        return defaultProps;
-    }
-}
-
-/**
- * Formats an ISO date string into a relative time string (e.g., "5 minutes ago").
- * @param {string | null} isoString The ISO date string to format.
- * @returns {string} A formatted relative time string.
- */
-function formatTimeAgo(isoString) {
-    if (!isoString) {
-        return 'Never';
-    }
-
-    const date = new Date(isoString);
-    const now = new Date();
-    const seconds = Math.round((now - date) / 1000);
-
-    const intervals = {
-        year: 31536000,
-        month: 2592000,
-        week: 604800,
-        day: 86400,
-        hour: 3600,
-        minute: 60
-    };
-
-    if (seconds < 30) return 'Just now';
-
-    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-        const interval = Math.floor(seconds / secondsInUnit);
-        if (interval >= 1) {
-            return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
-        }
-    }
-    return `${Math.floor(seconds)} seconds ago`;
-}
 // ========================================================================
 //  DOM CONTENT LOADED - All the code inside this function runs after the page has finished loading.
 // ========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const serverProps = await loadServerProperties();
+    let isDashboardInitialized = false;
+    const dashboardSection = document.getElementById('dashboard');
 
-    // Set the background image from server properties
-    if (serverProps.DASHBOARD_BACKGROUND_IMAGE_PATH) {
-        document.documentElement.style.setProperty('--dashboard-bg-image', `url('${serverProps.DASHBOARD_BACKGROUND_IMAGE_PATH}')`);
-    }
-
-    // --- Favicon ---
-    if (serverProps.FAVICON_PATH) {
-        const faviconIco = document.getElementById('favicon-ico');
-        const faviconShortcut = document.getElementById('favicon-shortcut');
-        if (faviconIco) faviconIco.href = serverProps.FAVICON_PATH;
-        if (faviconShortcut) faviconShortcut.href = serverProps.FAVICON_PATH;
-    }
-    // ========================================================================
-    //  SESSION MANAGEMENT
-    // ========================================================================
-    const sessionString = localStorage.getItem('session');
-    let session = null;
-
-    if (sessionString) {
-        session = JSON.parse(sessionString);
-        // Check if the session has expired
-        if (Date.now() > session.expiry) {
-            localStorage.removeItem('session'); // Clear expired session
-            session = null; // Invalidate session
-            showInfoModal('Session Expired', 'Your session has expired. Please log in again.', { type: 'error', onOk: () => {
-                window.location.href = 'index.html';
-            }});
+    const initializeDashboard = () => {
+        if (isDashboardInitialized) {
+            // If already initialized, just ensure the character select view is visible
+            document.getElementById('character-select-view').classList.remove('hidden');
+            document.getElementById('character-detail-view').classList.add('hidden');
+            renderCharacterSlots(); // Re-render slots in case a character was created/deleted
+            return;
         }
-    }
 
-    if (!session) {
-        // If no session or it expired, redirect to the main page
-        window.location.href = 'index.html';
-        return; // Stop further script execution
-    }
-
-    // ========================================================================
-    //  MODAL INSTANCES
-    // ========================================================================
-    const confirmationModal = new Modal('confirm-modal');
-
-    // ========================================================================
-    //  CHARACTER DATA MANAGEMENT
-    // ========================================================================
-    document.getElementById('dashboard-username').textContent = session.username;
-
-    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-    const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
-    const slotsContainer = document.getElementById('character-slots-container');
-    const maxSlots = serverProps.MAX_CHARACTER_SLOTS;
-
-    for (let i = 0; i < maxSlots; i++) {
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'character-slot rounded-lg p-6 flex flex-col justify-center items-center';
-
-        if (userCharacters[i]) {
-            // If a character exists for this slot, display their info
-            const char = userCharacters[i];
-            const lastOnline = formatTimeAgo(char.lastOnline);
-            slotDiv.innerHTML = `
-                <h3 class="text-2xl font-bold text-white text-shadow">${char.name}</h3>
-                <p class="text-gray-300 mt-1">Lv. 1 ${char.class}</p>
-                <p class="text-xs text-gray-400 mt-2">Last online: ${lastOnline}</p>
-                <div class="flex gap-2 mt-4">
-                    <button data-char-name="${char.name}" class="enter-game-btn bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">Enter Game</button>
-                    <button data-char-name="${char.name}" class="delete-char-btn bg-red-800/80 border border-red-600 px-4 py-2 rounded-lg hover:bg-red-700/80 transition text-sm">Delete</button>
-                </div>
-            `;
-        } else {
-            // If the slot is empty
-            slotDiv.innerHTML = `
-                <h3 class="text-2xl font-bold text-gray-500">Empty Slot</h3>
-                <p class="text-gray-400 mt-1">Available</p>
-                ${ userCharacters.length < maxSlots
-                    ? `<a href="create-character.html" class="mt-4 bg-green-600 px-6 py-2 rounded-lg hover:bg-green-700 transition">Create Character</a>`
-                    : `<button class="mt-4 bg-gray-600 px-6 py-2 rounded-lg cursor-not-allowed opacity-50" disabled>Slots Full</button>`
-                }
-            `;
+        const session = JSON.parse(localStorage.getItem('session'));
+        if (!session || Date.now() > session.expiry) {
+            toggleForm('dashboard'); // Close dashboard
+            toggleForm('loginForm'); // Open login
+            return;
         }
-        slotsContainer.appendChild(slotDiv);
-    }
-    // If all slots are full, no "Empty Slot" cards are rendered, so this part is not strictly necessary
-    // but it's a good defensive check.
-    if (userCharacters.length >= maxSlots) {
-        // This logic is now handled inside the loop.
+
+        renderCharacterSlots();
+        setupEventListeners();
+        isDashboardInitialized = true;
+        console.log('[Debug] Dashboard initialized.');
     }
 
     /**
@@ -165,6 +34,44 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     function generateUUID() {
         return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+
+    function renderCharacterSlots() {
+        const session = JSON.parse(localStorage.getItem('session'));
+        if (!session) return;
+
+        document.getElementById('dashboard-username').textContent = session.username;
+
+        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+        const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
+        const slotsContainer = document.getElementById('character-slots-container');
+        const maxSlots = window.serverProperties?.MAX_CHARACTER_SLOTS || 6;
+
+        slotsContainer.innerHTML = ''; // Clear existing slots before re-rendering
+
+        for (let i = 0; i < maxSlots; i++) {
+            const slotDiv = document.createElement('div');
+            slotDiv.className = 'character-slot rounded-lg p-6 flex flex-col justify-center items-center';
+
+            if (userCharacters[i]) {
+                const char = userCharacters[i];
+                slotDiv.innerHTML = `
+                    <h3 class="text-2xl font-bold text-white text-shadow">${char.name}</h3>
+                    <p class="text-gray-300 mt-1">Lv. 1 ${char.class}</p>
+                    <div class="flex gap-2 mt-4">
+                        <button data-char-name="${char.name}" class="enter-game-btn action-btn btn-blue text-sm">Enter Game</button>
+                        <button data-char-name="${char.name}" class="delete-char-btn action-btn btn-red text-sm">Delete</button>
+                    </div>
+                `;
+            } else {
+                slotDiv.innerHTML = `
+                    <h3 class="text-2xl font-bold text-gray-500">Empty Slot</h3>
+                    <p class="text-gray-400 mt-1">Available</p>
+                    <button class="create-char-btn mt-4 action-btn btn-green">Create Character</button>
+                `;
+            }
+            slotsContainer.appendChild(slotDiv);
+        }
     }
 
     /**
@@ -213,9 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         storagePanel.innerHTML = storageHTML;
 
         // For now, level is hardcoded. This can be replaced with character.level later.
-        const characterLevel = 1;
-        const ring3Lvl = serverProps.RING3_LEVEL_REQUIREMENT;
-        const ring4Lvl = serverProps.RING4_LEVEL_REQUIREMENT;
+        const characterLevel = 1; 
 
         // Get Adena count from inventory for display in the status panel
         const adenaItem = inventory.find(item => item.name === 'Adena');
@@ -264,12 +169,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <li class="equip-slot"><span>Amulet:</span> <span class="font-bold text-gray-400">None</span></li>
                     <li class="equip-slot"><span>Ring 1:</span> <span class="font-bold text-gray-400">None</span></li>
                     <li class="equip-slot"><span>Ring 2:</span> <span class="font-bold text-gray-400">None</span></li>
-                    ${ characterLevel >= ring3Lvl 
+                    ${ characterLevel >= 76 
                         ? `<li class="equip-slot"><span>Ring 3:</span> <span class="font-bold text-gray-400">None</span></li>`
-                        : `<li class="equip-slot"><span>Ring 3:</span> <span class="font-bold text-red-500/70">Locked (Lv. ${ring3Lvl})</span></li>` }
-                    ${ characterLevel >= ring4Lvl 
+                        : `<li class="equip-slot"><span>Ring 3:</span> <span class="font-bold text-red-500/70">Locked (Lv. 76)</span></li>` }
+                    ${ characterLevel >= 81 
                         ? `<li class="equip-slot"><span>Ring 4:</span> <span class="font-bold text-gray-400">None</span></li>`
-                        : `<li class="equip-slot"><span>Ring 4:</span> <span class="font-bold text-red-500/70">Locked (Lv. ${ring4Lvl})</span></li>` }
+                        : `<li class="equip-slot"><span>Ring 4:</span> <span class="font-bold text-red-500/70">Locked (Lv. 81)</span></li>` }
                 </ul>
             </div>
         `;
@@ -307,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const quantityToSplit = parseInt(prompt(`How many ${itemToSplit.name} do you want to split? (Max: ${itemToSplit.quantity - 1})`), 10);
 
             if (isNaN(quantityToSplit) || quantityToSplit <= 0 || quantityToSplit >= itemToSplit.quantity) {
-                showInfoModal('Invalid Quantity', 'Please enter a number greater than 0 and less than the total stack size.', { type: 'error' });
+                alert('Invalid quantity. Please enter a number greater than 0 and less than the total stack size.');
                 return;
             }
 
@@ -327,43 +232,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateAndRerender();
         }
 
+        // --- Handle Combine Stacks ---
+        if (button.id === 'combine-stacks-btn') {
+            // This is a placeholder for the combine logic.
+            console.log('Combine button clicked');
+        }
+
     }
+
+    // --- Go to Market Button ---
+    document.getElementById('go-to-market-btn').addEventListener('click', () => {
+        const charName = document.querySelector('#character-display .stat-item span.font-bold.text-white').textContent;
+        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+        const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === (JSON.parse(localStorage.getItem('session'))?.username.toLowerCase() || ''));
+        const characterToEnter = userCharacters.find(c => c.name === charName);
+        localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
+        toggleForm('dashboard');
+        toggleForm('marketplace');
+    });
 
     // ========================================================================
     //  EVENT LISTENERS & DELEGATION
     // ========================================================================
+    function setupEventListeners() {
+        const dashboardContent = document.getElementById('dashboard');
+        if (!dashboardContent) return;
 
-    // --- Main Dashboard Click Handler (Event Delegation) ---
-    const dashboardContent = document.getElementById('dashboard-content');
-    if (dashboardContent) {
         dashboardContent.addEventListener('click', (event) => {
             const target = event.target;
+            const session = JSON.parse(localStorage.getItem('session'));
+            if (!session) return;
+
+            const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+            const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
 
             // --- Enter Game Button ---
             if (target.matches('.enter-game-btn')) {
                 const charName = target.dataset.charName;
                 const characterToEnter = userCharacters.find(c => c.name === charName);
-                if (characterToEnter) {
-                    // Update last online status before entering
-                    characterToEnter.lastOnline = new Date().toISOString();
-                    
-                    // Save the updated character data back to the main list
-                    const allChars = JSON.parse(localStorage.getItem('characters')) || [];
-                    const charIndex = allChars.findIndex(c => c.name === charName);
-                    if (charIndex !== -1) allChars[charIndex] = characterToEnter;
-                    localStorage.setItem('characters', JSON.stringify(allChars));
-
-                    localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
-                    showCharacterDetails(characterToEnter);
-                }
+                if (characterToEnter) showCharacterDetails(characterToEnter);
                 return;
             }
 
             // --- Delete Character Button ---
             if (target.matches('.delete-char-btn')) {
                 const charName = target.dataset.charName;
-                
-                confirmationModal.show({
+                showConfirmModal({
                     title: 'Delete Character',
                     message: `Are you sure you want to permanently delete <span class="font-bold text-white">${charName}</span>? This action cannot be undone.`,
                     typeToConfirm: charName,
@@ -371,78 +285,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let allChars = JSON.parse(localStorage.getItem('characters')) || [];
                         const updatedCharacters = allChars.filter(c => c.name !== charName);
                         localStorage.setItem('characters', JSON.stringify(updatedCharacters));
-                        window.location.reload();
+                        renderCharacterSlots(); // Re-render the slots view
                     }
                 });
+                return;
+            }
 
+            // --- Create Character Button ---
+            if (target.matches('.create-char-btn')) {
+                toggleForm('dashboard');
+                toggleForm('characterCreationForm');
                 return;
             }
 
             // --- Back to Character Select Button ---
-            if (target.matches('#back-to-select-btn') || target.matches('#back-to-select-btn-2')) {
+            if (target.matches('#back-to-select-btn-2')) {
                 document.getElementById('character-select-view').classList.remove('hidden');
                 document.getElementById('character-detail-view').classList.add('hidden');
                 return;
             }
-        });
-    }
 
-    // --- Storage Panel Click Handler (Event Delegation) ---
-    const storagePanel = document.getElementById('character-storage-panel');
-    if (storagePanel) {
+            // --- Delete Account Button ---
+            if (target.matches('#delete-account-btn')) {
+                showConfirmModal({
+                    title: 'DELETE ACCOUNT',
+                    message: 'This is a <span class="font-bold text-white">PERMANENT</span> action. You will lose your account and all characters. This cannot be undone.',
+                    typeToConfirm: 'DELETE',
+                    onConfirm: () => {
+                        let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+                        registeredUsers = registeredUsers.filter(user => user.username.toLowerCase() !== session.username.toLowerCase());
+                        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+                        let allChars = JSON.parse(localStorage.getItem('characters')) || [];
+                        allChars = allChars.filter(char => char.owner.toLowerCase() !== session.username.toLowerCase());
+                        localStorage.setItem('characters', JSON.stringify(allChars));
+
+                        localStorage.removeItem('session');
+                        window.location.reload();
+                    }
+                });
+                return;
+            }
+        });
+
+        // --- Storage Panel Click Handler (Event Delegation) ---
+        const storagePanel = document.getElementById('character-storage-panel');
         storagePanel.addEventListener('click', (event) => {
             handleStorageClick(event);
         });
     }
 
-    // --- Delete Account Button ---
-    const deleteAccountBtn = document.getElementById('delete-account-btn');
-    if (deleteAccountBtn) {
-        const deleteAccountModal = new Modal('delete-account-modal');
-        deleteAccountBtn.addEventListener('click', () => {
-            deleteAccountModal.show({
-                title: 'DELETE ACCOUNT',
-                message: 'This is a <span class="font-bold text-white">PERMANENT</span> action. You will lose your account and all characters. To confirm, type "DELETE" below.',
-                confirmText: 'Yes, Delete My Account',
-                typeToConfirm: 'DELETE',
-                onConfirm: () => {
-                    let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                    registeredUsers = registeredUsers.filter(user => user.username.toLowerCase() !== session.username.toLowerCase());
-                    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-                    let allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-                    allCharacters = allCharacters.filter(char => char.owner.toLowerCase() !== session.username.toLowerCase());
-                    localStorage.setItem('characters', JSON.stringify(allCharacters));
-
-                    localStorage.removeItem('session');
-                    window.location.href = 'index.html';
+    // Use a MutationObserver to initialize the dashboard only when it becomes visible.
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (!dashboardSection.classList.contains('hidden')) {
+                    initializeDashboard();
                 }
-            });
-        });
-    }
-
-    // --- Logout Button ---
-    const logoutButton = document.getElementById('logout-btn');
-    if (logoutButton) {
-        const logoutModal = new Modal('logout-modal');
-        logoutButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            logoutModal.show({
-                title: 'Confirm Logout',
-                message: 'Are you sure you want to end your session?',
-                confirmText: 'Logout',
-                onConfirm: () => {
-                    localStorage.removeItem('session');
-                    window.location.href = logoutButton.href;
-                }
-            });
-        });
-    }
-
-    // ========================================================================
-    //  INITIAL FADE-IN EFFECT
-    // ========================================================================
-    const content = document.getElementById('dashboard-content');
-    if (content) content.style.opacity = '1'; // Trigger the fade-in effect defined in CSS
-
+            }
+        }
+    });
+    if (dashboardSection) observer.observe(dashboardSection, { attributes: true });
 });

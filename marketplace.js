@@ -1,50 +1,11 @@
 /**
- * Fetches and parses the server.properties file.
- * @returns {Promise<object>} A promise that resolves to an object with the server properties.
- */
-async function loadServerProperties() {
-    // Default values in case the file is missing or fails to load
-    const defaultProps = { BUY_ENABLED: true, SELL_ENABLED: true, FAVICON_PATH: 'icon/cs.ico', ITEM_NAMES_FILE_PATH: 'droplist_txt/itemname.txt', STACKABLE_ITEM_KEYWORDS: 'potion,scroll,arrow,waffle,gem,ore,piece,crystal,totem,key,elixir,orb,stone,seed,fruit,shard,essence,powder,ash,relic,core,tear,scale,blood,bone,fang,feather,claw,eye,heart,egg,liver,meat,bag,spool', STACKABLE_PRICE_MIN: 20, STACKABLE_PRICE_MAX: 200, NONSTACKABLE_PRICE_MIN: 250, NONSTACKABLE_PRICE_MAX: 5000, MAIN_BACKGROUND_VIDEO_PATH: 'media/lineage2.mp4' };
-    try {
-        const response = await fetch('server.properties');
-        if (!response.ok) {
-            console.warn('server.properties not found. Using default marketplace settings.');
-            return defaultProps;
-        }
-        const text = await response.text();
-        const properties = {};
-        text.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const [key, value] = line.split('=').map(s => s.trim());
-                if (key && value !== undefined) {
-                    // Process properties, ensuring correct type conversion
-                    if (key.endsWith('_JSON')) {
-                        properties[key] = value;
-                    } else if (value.toLowerCase() === 'true') {
-                        properties[key] = true;
-                    } 
-                    else if (value.toLowerCase() === 'false') properties[key] = false;
-                    else if (!isNaN(Number(value))) properties[key] = Number(value);
-                    else properties[key] = value;
-                }
-            }
-        });
-        return { ...defaultProps, ...properties };
-    } catch (error) {
-        console.error('Failed to load server.properties:', error);
-        return defaultProps;
-    }
-}
-
-/**
  * Manages user session and active character initialization.
  * @returns {object|null} The active character object or null if session is invalid.
  */
 function initializeUserSession() {
     const session = JSON.parse(localStorage.getItem('session'));
     if (!session) {
-        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => window.location.href = 'index.html' });
+        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => toggleForm('loginForm') });
         return null;
     }
 
@@ -72,37 +33,23 @@ function initializeUserSession() {
     return { activeCharacter, userCharacters };
 }
 
-
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const serverProps = await loadServerProperties();
-    const BUY_ENABLED = serverProps.BUY_ENABLED;
-    const SELL_ENABLED = serverProps.SELL_ENABLED;
-
-    // --- Favicon ---
-    if (serverProps.FAVICON_PATH) {
-        const faviconIco = document.getElementById('favicon-ico');
-        const faviconShortcut = document.getElementById('favicon-shortcut');
-        if (faviconIco) faviconIco.href = serverProps.FAVICON_PATH;
-        if (faviconShortcut) faviconShortcut.href = serverProps.FAVICON_PATH;
-    }
+    let isMarketplaceInitialized = false; // Flag to prevent re-initialization
+    let activeCharacter = null;
+    let userCharacters = [];
+    const serverProps = window.serverProperties; // Use globally loaded properties
+    const BUY_ENABLED = serverProps?.BUY_ENABLED;
+    const SELL_ENABLED = serverProps?.SELL_ENABLED;
 
     // If both buying and selling are disabled, show a general unavailable message and stop everything.
     // This check now runs before the session check.
-    if (!BUY_ENABLED && !SELL_ENABLED) {
-        // Show a modal instead of just changing the panel content.
-        showInfoModal('Marketplace Unavailable', 'The marketplace is temporarily disabled. Please check back later.', { onOk: () => window.location.href = 'dashboard.html' });
-        return; // Stop further script execution.
-    }
-
-    const sessionData = initializeUserSession();
-    if (!sessionData) return; // Stop if session is invalid
-
-    let { activeCharacter, userCharacters } = sessionData;
+    // This logic will be moved inside initializeMarketplace
 
     // ========================================================================
     //  MARKETPLACE STATE & DOM ELEMENTS
     // ========================================================================
+    const marketplaceSection = document.getElementById('marketplace');
     let marketGoods = [];
     const buyPanel = document.getElementById('buy-panel');
     const sellPanel = document.getElementById('sell-panel');
@@ -230,19 +177,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const confirmAndBuy = (quantity) => {
             const totalPrice = (itemToBuy.price * quantity).toLocaleString();
-            new Modal('confirm-modal').show({
+            showConfirmModal({
                 title: 'Confirm Purchase',
                 message: `Are you sure you want to buy ${quantity}x ${escapeHTML(itemToBuy.name)} for ${totalPrice} Adena?`,
                 onConfirm: () => buyItems(itemToBuy, quantity)
             });
         };
 
-        new Modal('quantity-modal').show({
+        showQuantityModal({
             title: 'Buy Item',
             item: itemToBuy,
             onReady: (modal) => {
-                const input = modal.element.querySelector('#quantity-input');
-                const totalPriceEl = modal.element.querySelector('#quantity-total-price');
+                const input = modal.querySelector('#quantity-input');
+                const totalPriceEl = modal.querySelector('#quantity-total-price');
                 input.oninput = () => {
                     totalPriceEl.textContent = `${(itemToBuy.price || 0) * (parseInt(input.value) || 0)} Adena`;
                 };
@@ -291,22 +238,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totalValue = (sellPrice * quantity).toLocaleString();
             const displayName = itemToSell.enchantment !== undefined ? `+${itemToSell.enchantment} ${itemToSell.name}` : itemToSell.name;
             
-            new Modal('confirm-modal').show({
+            showConfirmModal({
                 title: 'Confirm Sale',
                 message: `Are you sure you want to sell ${quantity}x ${escapeHTML(displayName)} for ${totalValue} Adena?`,
                 onConfirm: () => sellItems(itemToSell, quantity)
             });
         };
 
-        if (itemToSell.stackable === false || itemToSell.quantity === 1) {
+        if (itemToSell.stackable === false || itemToSell.quantity === 1 || !window.showQuantityModal) {
             confirmAndSell(1);
         } else {
-            new Modal('quantity-modal').show({
+            showQuantityModal({
                 title: 'Sell Item',
                 item: itemToSell,
                 onReady: (modal) => {
-                    const input = modal.element.querySelector('#quantity-input');
-                    const totalPriceEl = modal.element.querySelector('#quantity-total-price');
+                    const input = modal.querySelector('#quantity-input');
+                    const totalPriceEl = modal.querySelector('#quantity-total-price');
                     input.max = itemToSell.quantity;
                     input.oninput = () => { totalPriceEl.textContent = `${(itemToSell.price || 0) * (parseInt(input.value) || 0)} Adena`; };
                 },
@@ -390,6 +337,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ========================================================================
 
     async function initializeMarketplace() {
+        if (isMarketplaceInitialized) return; // Don't re-initialize
+
+        // If both buying and selling are disabled, show a general unavailable message.
+        if (!BUY_ENABLED && !SELL_ENABLED) {
+            showInfoModal('Marketplace Unavailable', 'The marketplace is temporarily disabled. Please check back later.', { onOk: () => toggleForm('marketplace') });
+            // Hide the marketplace content and show a message
+            const marketplaceContent = marketplaceSection.querySelector('.text-center');
+            if (marketplaceContent) marketplaceContent.innerHTML = `<p class="text-yellow-400 text-lg">The marketplace is currently disabled.</p>`;
+            return;
+        }
+
+        const sessionData = initializeUserSession();
+        if (!sessionData) {
+            // The initializeUserSession function already shows a modal and redirects.
+            // We might want to just close the form instead.
+            toggleForm('marketplace'); // Close the marketplace panel if user is not logged in
+            return;
+        }
+        ({ activeCharacter, userCharacters } = sessionData);
         await loadMarketGoods();
         
         // Render the character selector first
@@ -424,7 +390,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 handleSellItem(event);
             }
         });
+
+        isMarketplaceInitialized = true;
+        console.log('[Debug] Marketplace initialized.');
     }
 
-    initializeMarketplace();
+    // Use a MutationObserver to initialize the marketplace only when it becomes visible.
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const isHidden = marketplaceSection.classList.contains('hidden');
+                if (!isHidden) {
+                    initializeMarketplace();
+                }
+            }
+        }
+    });
+    if (marketplaceSection) observer.observe(marketplaceSection, { attributes: true });
 });

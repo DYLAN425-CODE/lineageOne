@@ -3,13 +3,15 @@
  * @param {string} id The ID of the section to toggle.
  */
 function toggleForm(id) {
-  const formSections = ['loginForm', 'registerForm', 'forgotPasswordForm', 'resetPasswordForm', 'download', 'discord'];
+  console.log(`[Debug] toggleForm called for: #${id}`);
+  const formSections = ['loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord', 'marketplace', 'characterCreationForm', 'dashboard', 'droplist', 'itemViewer'];
   if (!formSections.includes(id)) {
     return;
   }
 
   const targetSection = document.getElementById(id);
   const isOpening = targetSection.classList.contains('hidden');
+  console.log(`[Debug] #${id} is ${isOpening ? 'opening' : 'closing'}.`);
 
   // Hide all other form sections
   formSections.forEach(sectionId => {
@@ -20,7 +22,12 @@ function toggleForm(id) {
   });
 
   // Toggle the target section's visibility
-  targetSection.classList.toggle('hidden');
+  if (id === 'droplist' || id === 'itemViewer') {
+    targetSection.classList.toggle('hidden');
+    targetSection.classList.toggle('flex'); // Droplist uses flexbox for its layout
+  } else {
+    targetSection.classList.toggle('hidden');
+  }
 
   // --- Accessibility: Focus on the first input when a form is opened ---
   if (isOpening) {
@@ -37,7 +44,7 @@ function toggleForm(id) {
   const discordSection = document.getElementById('discord');
   
   // Define which sections should hide the main content (news/gallery)
-  const sectionsThatHideMainContent = ['loginForm', 'registerForm', 'download', 'discord', 'droplist'];
+  const sectionsThatHideMainContent = ['loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord', 'droplist', 'marketplace', 'characterCreationForm', 'dashboard', 'itemViewer'];
 
   if (sectionsThatHideMainContent.includes(id) && isOpening) {
     newsSection?.classList.add('hidden');
@@ -69,6 +76,7 @@ function toggleForm(id) {
  * @returns {Promise<object>} A promise that resolves to an object with the server properties.
  */
 async function loadServerProperties() {
+    console.log('[Debug] Loading server.properties...');
     // Default values in case the file is missing or fails to load
     const defaultProps = {
         DOWNLOAD_ENABLED: true, DISCORD_ENABLED: true, NEWS_ENABLED: true,
@@ -137,6 +145,7 @@ async function loadServerProperties() {
                 }
             }
         });
+        console.log('[Debug] server.properties loaded successfully.');
         return { ...defaultProps, ...properties };
     } catch (error) {
         console.error('Failed to load server.properties:', error);
@@ -158,13 +167,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutButton = document.getElementById('logout-button');
 
   if (session && Date.now() < session.expiry) {
-    // User is logged in
+    // User is logged in, show dashboard and hide main content
     logoutButton?.classList.remove('hidden');
+    toggleForm('dashboard');
+
+    // Hide the countdown timer since the user is already logged in
+    const countdownSection = document.getElementById('countdown');
+    if (countdownSection) {
+      countdownSection.classList.add('hidden');
+    }
   } else {
     // User is not logged in or session expired
     logoutButton?.classList.add('hidden');
     loginButton?.classList.remove('hidden');
     registerButton?.classList.remove('hidden');
+    // Ensure main content is visible on first load for non-logged-in users
+    toggleForm(null);
   }
 
   // --- Feature Flag UI Updates ---
@@ -207,6 +225,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     // Load news, and if countdown is also enabled, pass the flag to it.
     loadNews(window.serverProperties.COUNTDOWN_ENABLED);
+  }
+
+  // --- Start Countdown Timer (if enabled) ---
+  // This is moved out of loadNews to be independent.
+  if (window.serverProperties.COUNTDOWN_ENABLED) {
+    const launchDateString = window.serverProperties.DOWNLOAD_AVAILABLE_DATE;
+    const launchDate = new Date(launchDateString);
+    if (launchDateString && !isNaN(launchDate.getTime())) {
+      startCountdown(new Date(), launchDate);
+    }
   }
 
   // --- Site Appearance Settings ---
@@ -266,16 +294,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(checkServerStatus, intervalSeconds * 1000);
   }
 
-  // --- Prevent Right-Click to Discourage Resource Downloading ---
-  // Paalala: Ito ay hindi isang ganap na security measure at madaling i-bypass.
-  // Ito ay para lamang pahirapan ang mga kaswal na user sa pag-save ng mga imahe at video.
-  document.addEventListener('contextmenu', event => {
-    // Payagan ang right-click sa mga form input para sa mas magandang user experience (e.g., paste).
-    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-      return;
-    }
-    event.preventDefault();
-  });
   // --- Clear form fields on page load/refresh ---
   // This prevents browsers from auto-filling fields after a refresh.
   const formsToReset = ['login-form'];
@@ -319,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('login-button')?.addEventListener('click', () => {
     const currentSession = JSON.parse(localStorage.getItem('session'));
     if (currentSession && Date.now() < currentSession.expiry) {
-      window.location.href = 'dashboard.html';
+      toggleForm('dashboard');
     } else {
       toggleForm('loginForm');
     }
@@ -337,12 +355,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleForm('download');
   });
 
+  // Handle the back button from the create character form
+  document.getElementById('create-char-back-btn')?.addEventListener('click', () => {
+    toggleForm('characterCreationForm'); // This will close the form and show the main content
+  });
+
+  document.getElementById('droplist-button')?.addEventListener('click', () => {
+    toggleForm('droplist');
+  });
+
+  // Handle the back button from the droplist section
+  document.getElementById('droplist-back-btn')?.addEventListener('click', () => {
+    toggleForm('droplist');
+  });
+
+  document.getElementById('item-viewer-button')?.addEventListener('click', () => {
+    toggleForm('itemViewer');
+  });
+
+  // Handle the back button from the item viewer section
+  document.getElementById('item-viewer-back-btn')?.addEventListener('click', () => {
+    toggleForm('itemViewer');
+  });
+
+  document.getElementById('marketplace-button')?.addEventListener('click', () => {
+    toggleForm('marketplace');
+  });
+
   document.getElementById('discord-button')?.addEventListener('click', () => {
     toggleForm('discord');
   });
   document.getElementById('forgot-password-button')?.addEventListener('click', (event) => {
     event.preventDefault(); // Prevent default link behavior
-    toggleForm('forgotPasswordForm');
+    toggleForm('passwordResetFlow');
   });
 
   document.getElementById('logout-button')?.addEventListener('click', () => {
@@ -360,6 +405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.removeItem('session');
     window.location.reload(); // Reload the page to reflect the logged-out state
   });
+
+  // --- Handle Hash Links (e.g., from dashboard.html#create) ---
+  if (window.location.hash === '#create') {
+    // Use a small timeout to ensure all scripts have loaded and properties are set
+    setTimeout(() => toggleForm('characterCreationForm'), 100);
+  }
 
   // ========================================================================
   //  SEAMLESS BACKGROUND VIDEO PLAYLIST
@@ -489,15 +540,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       });
 
-      // --- Start Countdown Timer using date from news ---
-      const launchAnnouncement = newsItems.find(item => item.launchDateISO);
-      if (isCountdownEnabled && launchAnnouncement) {
-        const launchDate = new Date(launchAnnouncement.launchDateISO);
-        // Check if the launchDate is a valid date, then start the countdown using the client's local time.
-        if (!isNaN(launchDate.getTime())) {
-            startCountdown(new Date(), launchDate);
-        }
-      }
     } catch (error) {
       console.error('Failed to load news:', error);
       newsContainer.innerHTML = '<p class="text-center text-red-500">Could not load news at this time.</p>';
@@ -557,29 +599,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (registrationForm && registerFormContainer) {
     registrationForm.addEventListener('submit', function(event) {
       event.preventDefault(); // Prevent the form from submitting to register.php
+      console.log('[Debug] Registration form submitted.');
       clearFormErrors(this);
 
       const username = this.elements.username.value;
       const email = this.elements.email.value;
+      const password = this.elements.password.value;
+      const confirmPassword = this.elements.confirm_password.value;
       const usernameInput = this.elements.username;
       const emailInput = this.elements.email;
+      const confirmPasswordInput = this.elements.confirm_password;
 
-      // --- Check if username already exists (simulation using localStorage) ---
+      // --- Validation ---
+      console.log(`[Debug] Checking for existing user: ${username} or email: ${email}`);
       const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
       const userExists = registeredUsers.some(user => user.username.toLowerCase() === username.toLowerCase());
       // Check if email exists, ensuring user.email is not undefined
       const emailExists = registeredUsers.some(user => user.email && user.email.toLowerCase() === email.toLowerCase());
 
       if (userExists) {
+        console.warn(`[Debug] Registration failed: Username '${username}' already exists.`);
         // If user exists, show an error message
         showFieldError(usernameInput, 'Username already exists. Please try another.');
         usernameInput.focus();
       } else if (emailExists) {
+        console.warn(`[Debug] Registration failed: Email '${email}' already exists.`);
         showFieldError(emailInput, 'Email is already registered. Please use another.');
         emailInput.focus();
+      } else if (password !== confirmPassword) {
+        console.warn(`[Debug] Registration failed: Passwords do not match.`);
+        showFieldError(confirmPasswordInput, 'Passwords do not match.');
+        confirmPasswordInput.focus();
       } else {
+        console.log(`[Debug] Registration successful for user: ${username}`);
         // If user does not exist, proceed with registration
-        const newUser = { username: username, email: email, password: this.elements.password.value };
+        const newUser = { username: username, email: email, password: password };
         registeredUsers.push(newUser);
         localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
@@ -595,6 +649,66 @@ document.addEventListener('DOMContentLoaded', async () => {
           loginForm.scrollIntoView({ behavior: 'smooth' });
         }
       }
+    });
+  }
+
+  // --- Password Strength Meter ---
+  const passwordInput = document.getElementById('register-password');
+  if (passwordInput) {
+    const strengthMeter = document.getElementById('password-strength-meter');
+    const strengthBars = strengthMeter?.querySelectorAll('.strength-bar');
+    const reqs = {
+      length: document.getElementById('req-length'),
+      uppercase: document.getElementById('req-uppercase'),
+      number: document.getElementById('req-number'),
+      special: document.getElementById('req-special'),
+    };
+
+    passwordInput.addEventListener('input', () => {
+      const pass = passwordInput.value;
+      let score = 0;
+
+      // Rule 1: Length >= 8
+      if (pass.length >= 8) {
+        score++;
+        reqs.length?.classList.add('met');
+      } else {
+        reqs.length?.classList.remove('met');
+      }
+
+      // Rule 2: Contains uppercase
+      if (/[A-Z]/.test(pass)) {
+        score++;
+        reqs.uppercase?.classList.add('met');
+      } else {
+        reqs.uppercase?.classList.remove('met');
+      }
+
+      // Rule 3: Contains number
+      if (/[0-9]/.test(pass)) {
+        score++;
+        reqs.number?.classList.add('met');
+      } else {
+        reqs.number?.classList.remove('met');
+      }
+
+      // Rule 4: Contains special character
+      if (/[!@#$%^&*]/.test(pass)) {
+        score++;
+        reqs.special?.classList.add('met');
+      } else {
+        reqs.special?.classList.remove('met');
+      }
+
+      // Update strength meter bars
+      const colors = ['#374151', '#ef4444', '#f97316', '#facc15', '#4ade80']; // gray, red, orange, yellow, green
+      strengthBars?.forEach((bar, index) => {
+        if (index < score) {
+          bar.style.backgroundColor = colors[score];
+        } else {
+          bar.style.backgroundColor = colors[0]; // Default gray
+        }
+      });
     });
   }
 
@@ -631,6 +745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (loginForm) {
     loginForm.addEventListener('submit', function(event) {
       event.preventDefault(); // Prevent submitting to login.php
+      console.log('[Debug] Login form submitted.');
       clearFormErrors(this);
 
       const username = this.elements.username.value;
@@ -639,10 +754,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const rememberMe = this.elements['remember-me'].checked;
 
       // --- Check if username and password are correct (simulation using localStorage) ---
+      console.log(`[Debug] Attempting login for user: ${username}`);
       const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
       const user = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
 
       if (user) {
+        console.log(`[Debug] Login successful for user: ${username}. Remember me: ${rememberMe}`);
         // If user is found and password is correct, proceed to login
         // Set session with an expiry time (e.g., 1 hour)
         const rememberMeDays = window.serverProperties.REMEMBER_ME_DURATION_DAYS || 30;
@@ -655,8 +772,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             expiry: expiryTime
         };
         localStorage.setItem('session', JSON.stringify(session));
-        window.location.href = 'dashboard.html'; // Redirect to dashboard
+        // Instead of redirecting, hide the login form and show the dashboard
+        toggleForm('loginForm'); // Close login
+        toggleForm('dashboard'); // Open dashboard
+
+        // --- Manually update UI elements that don't auto-refresh ---
+        // Hide the countdown timer
+        const countdownSection = document.getElementById('countdown');
+        if (countdownSection) {
+          countdownSection.classList.add('hidden');
+        }
+        // Update header buttons
+        document.getElementById('login-button')?.classList.add('hidden');
+        document.getElementById('register-button')?.classList.add('hidden');
+        document.getElementById('logout-button')?.classList.remove('hidden');
       } else {
+        console.warn(`[Debug] Login failed: Invalid credentials for user: ${username}`);
         // If user not found or password incorrect, show error
         showFieldError(usernameInput, 'Invalid username or password.');
         usernameInput.focus();
@@ -664,95 +795,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // --- Forgot Password Form ---
-  const forgotPasswordForm = document.getElementById('forgot-password-form');
-  if (forgotPasswordForm) {
-    forgotPasswordForm.addEventListener('submit', function(event) {
+  // --- Password Reset Flow (Combined Form) ---
+  const passwordResetForm = document.getElementById('password-reset-form');
+  if (passwordResetForm) {
+    let isStep2 = false; // State to track which step we are on
+
+    passwordResetForm.addEventListener('submit', function(event) {
       event.preventDefault();
-
+      const messageDiv = document.getElementById('password-reset-message');
       const email = this.elements.email.value;
-      const messageDiv = document.getElementById('forgot-password-message');
 
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-      const user = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-
-      if (user) {
-        // In a real application, you would trigger a server-side process to send an email.
-        // For this simulation, we will just show a success message.
-
-        // --- SIMULATION ---
-        // 1. Generate a fake reset code and expiry time
-        const resetCode = '123456'; // For simulation, we use a static code
-        const expiryTime = Date.now() + (15 * 60 * 1000); // Code expires in 15 minutes
-
-        // 2. Save the code and expiry to the user object in localStorage
-        user.resetCode = resetCode;
-        user.resetCodeExpiry = expiryTime;
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-        // 3. Show a success message and instructions
-        messageDiv.innerHTML = `
-          <div class="bg-gray-800 p-4 rounded-lg">
-            <p class="text-green-400">✅ A password reset code has been sent to your email.</p>
-            <p class="text-xs text-gray-400 mt-2">(This is a simulation. Your code is: <strong class="text-yellow-300">${resetCode}</strong>)</p>
-          </div>
-        `;
-
-        // 4. Hide the 'forgot password' form and show the 'reset password' form
-        this.parentElement.classList.add('hidden');
-        const resetFormSection = document.getElementById('resetPasswordForm');
-        const resetEmailInput = document.getElementById('reset-email');
-        if (resetFormSection && resetEmailInput) {
-            resetEmailInput.value = email; // Store the email in the hidden field
-            resetFormSection.classList.remove('hidden');
-            resetFormSection.scrollIntoView({ behavior: 'smooth' });
-        }
-
-      } else {
-        // For security, we show the same message even if the user is not found.
-        messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ No account found with that email address.</p>`;
-      }
-    });
-  }
-
-  // --- Reset Password Form (The new form) ---
-  const resetPasswordForm = document.getElementById('reset-password-form');
-  if (resetPasswordForm) {
-    resetPasswordForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const messageDiv = document.getElementById('reset-password-message');
-        const email = this.elements.email.value;
-        const code = this.elements.code.value;
-        const newPassword = this.elements.new_password.value;
-
+      if (!isStep2) {
+        // --- LOGIC FOR STEP 1: SEND CODE ---
+        console.log('[Debug] Password Reset Step 1: Sending code.');
         const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
         const user = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
 
-        // --- Validation ---
+        if (user) {
+          console.log(`[Debug] Account found for email: ${email}. Simulating password reset code.`);
+          const resetCode = '123456'; // Static code for simulation
+          user.resetCode = resetCode;
+          user.resetCodeExpiry = Date.now() + (15 * 60 * 1000); // 15-minute expiry
+          localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+          messageDiv.innerHTML = `<div class="bg-gray-800 p-4 rounded-lg"><p class="text-green-400">✅ A password reset code has been sent to your email.</p><p class="text-xs text-gray-400 mt-2">(Simulation code: <strong class="text-yellow-300">${resetCode}</strong>)</p></div>`;
+
+          // Transition to Step 2
+          document.getElementById('reset-step-1').classList.add('hidden');
+          document.getElementById('reset-step-2').classList.remove('hidden');
+          this.elements.email.readOnly = true; // Make email field read-only
+          isStep2 = true;
+        } else {
+          console.warn(`[Debug] No account found for email: ${email}.`);
+          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ No account found with that email address.</p>`;
+        }
+      } else {
+        // --- LOGIC FOR STEP 2: VERIFY CODE AND RESET PASSWORD ---
+        console.log('[Debug] Password Reset Step 2: Verifying code.');
+        const code = this.elements.code.value;
+        const newPassword = this.elements.new_password.value;
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+        const user = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+
         if (!user || user.resetCode !== code) {
-            messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Invalid reset code.</p>`;
-            return;
+          console.warn(`[Debug] Password reset failed: Invalid code.`);
+          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Invalid reset code.</p>`;
+          return;
         }
         if (Date.now() > user.resetCodeExpiry) {
-            messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Reset code has expired. Please request a new one.</p>`;
-            return;
+          console.warn(`[Debug] Password reset failed: Code expired.`);
+          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Reset code has expired. Please request a new one.</p>`;
+          return;
         }
 
-        // --- Success: Update password ---
+        console.log(`[Debug] Password reset successful for email: ${email}.`);
         user.password = newPassword;
-        delete user.resetCode; // Clean up the used code and expiry
+        delete user.resetCode;
         delete user.resetCodeExpiry;
         localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
-        // --- Show success and redirect to login ---
-        this.parentElement.classList.add('hidden');
+        // Hide the reset flow and show the login form with a success message
+        document.getElementById('passwordResetFlow').classList.add('hidden');
         const loginForm = document.getElementById('loginForm');
         const loginMessage = document.getElementById('login-message');
         if (loginForm && loginMessage) {
-            loginMessage.innerHTML = `<p class="font-bold text-green-400">✅ Password has been reset successfully! Please log in.</p>`;
-            loginForm.classList.remove('hidden');
-            loginForm.scrollIntoView({ behavior: 'smooth' });
+          loginMessage.innerHTML = `<p class="font-bold text-green-400">✅ Password has been reset successfully! Please log in.</p>`;
+          loginForm.classList.remove('hidden');
+          loginForm.scrollIntoView({ behavior: 'smooth' });
         }
+      }
     });
   }
 
@@ -762,51 +873,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     downloadBtn.addEventListener('click', function(event) {
       event.preventDefault(); // Stop the link from navigating immediately
 
-      // --- DATE CHECK ---
-      // Define the date when the download becomes available
-      const downloadAvailableDate = new Date(window.serverProperties.DOWNLOAD_AVAILABLE_DATE + "+08:00");
-      const now = new Date(); // Use the user's current time for this check
-
-      if (now < downloadAvailableDate) {
-        showInfoModal('Download Not Available', 'The game client will be available for download starting August 10, 2027.', { type: 'info' });
-        return; // Stop the function if the download is not yet available
-      }
-
       // Prevent re-clicking while animation is running
       if (this.classList.contains('downloading')) {
         return;
       }
+
       this.classList.add('downloading');
-
-      const progressContainer = this.querySelector('.download-progress-container');
-      const percentageText = this.querySelector('.download-percentage');
-      const downloadUrl = this.href;
-      const originalButton = this; // Keep a reference to the button
-
-      progressContainer.classList.remove('hidden');
+      const originalButton = this;
+      const buttonTextSpan = originalButton.querySelector('.btn-text');
+      const originalText = buttonTextSpan.textContent; // Save original text
 
       let progress = 0;
-      const duration = 3000; // 3 seconds for the simulation
+      const duration = 10000; // 10 seconds for the simulation
       const intervalTime = 30; // Update every 30ms
 
       const progressInterval = setInterval(() => {
-        progress++;
-        const currentPercentage = Math.min(Math.floor((progress * intervalTime / duration) * 100), 100);
-        percentageText.textContent = `${currentPercentage}%`;
+        progress += intervalTime;
+        const currentPercentage = Math.min(Math.floor((progress / duration) * 100), 100);
+        
+        // Update the button's text directly
+        buttonTextSpan.textContent = `${currentPercentage}%`;
+        // Update the width of the ::before pseudo-element
+        originalButton.style.setProperty('--progress-width', `${currentPercentage}%`);
 
         if (currentPercentage >= 100) {
           clearInterval(progressInterval);
 
-          // Change text to "Complete!" and start the actual download
-          percentageText.textContent = 'Complete!';
-          window.location.href = downloadUrl;
+          showNotification(
+            'Download Not Available', 
+            'The game client is not yet ready for download. Please check back on the official launch date.',
+            { onOk: () => toggleForm('download') }
+          );
 
-          // Reset the button after a short delay
+          // Clean up and reset the button after a short delay
           setTimeout(() => {
             originalButton.classList.remove('downloading');
-            progressContainer.classList.add('hidden');
-            percentageText.textContent = '0%'; // Reset for next time
-          }, 2000);
+            // Reset the button's text and the progress bar width
+            buttonTextSpan.textContent = originalText;
+            originalButton.style.setProperty('--progress-width', '0%');
+          }, 1500);
         }
       }, intervalTime);
     });
@@ -1074,9 +1179,13 @@ async function checkServerStatus() {
   const apiUrl = window.serverProperties.SERVER_STATUS_API_URL || '/api/server-status'; 
 
   try {
+    // The 'ok' property checks for HTTP status codes in the 200-299 range.
     const response = await fetch(apiUrl);
-    const data = await response.json();
-    updateStatusUI(data.status);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json(); // This will only run if the response was 'ok'
+    updateStatusUI(data.status || 'offline');
   } catch (error) {
     console.error('Server status check failed:', error);
     updateStatusUI('offline'); // Assume offline if the API check fails

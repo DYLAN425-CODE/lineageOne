@@ -1,61 +1,4 @@
 /**
- * Fetches and parses the server.properties file.
- * @returns {Promise<object>} A promise that resolves to an object with the server properties.
- */
-async function loadServerProperties() {
-    // Default values in case the file is missing or fails to load
-    const defaultProps = {
-        MAX_CHARACTER_SLOTS: 6,
-        STARTER_INVENTORY_JSON: '[{"name":"Adena","quantity":5000,"stackable":true,"price":1},{"name":"Red Potion","quantity":30,"stackable":true,"price":30},{"name":"Haste Potion","quantity":5,"stackable":true,"price":180},{"name":"Trainee\'s T-shirt","quantity":1,"stackable":false,"droppable":false,"price":100}]',
-        FAVICON_PATH: 'icon/cs.ico',
-    };
-    try {
-        const response = await fetch(`server.properties?v=${Date.now()}`);
-        if (!response.ok) {
-            console.warn('server.properties not found. Using default settings.');
-            return defaultProps;
-        }
-        const text = await response.text();
-        const properties = {};
-        const numericKeys = ['MAX_CHARACTER_SLOTS'];
-
-        text.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const separatorIndex = line.indexOf('=');
-                if (separatorIndex === -1) return;
-
-                const key = line.substring(0, separatorIndex).trim();
-                let value = line.substring(separatorIndex + 1).trim();
-
-                if (key) {
-                    if (value.toLowerCase() === 'true') {
-                        properties[key] = true;
-                    } else if (value.toLowerCase() === 'false') {
-                        properties[key] = false;
-                    } else if (key.endsWith('_JSON')) {
-                        try {
-                            properties[key] = JSON.parse(value);
-                        } catch (e) {
-                            console.error(`Error parsing JSON for key ${key}:`, e);
-                            properties[key] = defaultProps[key] ? JSON.parse(defaultProps[key]) : null;
-                        }
-                    } else if (numericKeys.includes(key) && !isNaN(Number(value))) {
-                        properties[key] = Number(value);
-                    } else {
-                        properties[key] = value;
-                    }
-                }
-            }
-        });
-        return { ...defaultProps, ...properties };
-    } catch (error) {
-        console.error('Failed to load server.properties:', error);
-        return defaultProps;
-    }
-}
-
-/**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed.
  * @param {Function} func The function to debounce.
  * @param {number} wait The number of milliseconds to delay.
@@ -78,40 +21,55 @@ function generateUUID() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    window.serverProperties = await loadServerProperties();
+document.addEventListener('DOMContentLoaded', () => {
+    // Use a flag to ensure initialization only runs once, triggered by the form becoming visible.
+    let isCharCreateInitialized = false;
+    const creationFormSection = document.getElementById('characterCreationForm');
 
-    // --- Favicon ---
-    if (window.serverProperties.FAVICON_PATH) {
-        const faviconIco = document.getElementById('favicon-ico');
-        const faviconShortcut = document.getElementById('favicon-shortcut');
-        if (faviconIco) faviconIco.href = window.serverProperties.FAVICON_PATH;
-        if (faviconShortcut) faviconShortcut.href = window.serverProperties.FAVICON_PATH;
-    }
+    const initializeCharacterCreation = () => {
+        if (isCharCreateInitialized) return;
 
-    // --- Initial Check: User must be logged in and have slots available ---
-    const session = JSON.parse(localStorage.getItem('session'));
-    if (!session || Date.now() > session.expiry) {
-        showInfoModal('Login Required', 'You must be logged in to create a character. You will be redirected to the main page.', {
-            title: 'Login Required',
-            message: 'You must be logged in to create a character. You will be redirected to the main page.',
-            onOk: () => window.location.href = 'index.html'
-        });
-        return;
-    }
+        // serverProperties is now loaded globally by script.js
+        const serverProps = window.serverProperties;
+        if (!serverProps) {
+            console.error("[Char Create] serverProperties not available.");
+            // Optionally show an error and close the form
+            showInfoModal('Error', 'Could not load server configuration. Please try again later.', { onOk: () => toggleForm('characterCreationForm') });
+            return;
+        }
 
-    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-    const userCharacterCount = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase()).length;
-    const maxSlots = window.serverProperties.MAX_CHARACTER_SLOTS || 6;
+        // --- Initial Check: User must be logged in and have slots available ---
+        const session = JSON.parse(localStorage.getItem('session'));
+        if (!session || Date.now() > session.expiry) {
+            showInfoModal('Login Required', 'You must be logged in to create a character.', {
+                onOk: () => {
+                    toggleForm('characterCreationForm'); // Close create form
+                    toggleForm('loginForm'); // Open login form
+                }
+            });
+            return;
+        }
 
-    if (userCharacterCount >= maxSlots) {
-        showInfoModal('Character Slots Full', 'You have reached the maximum number of characters. Please delete a character to create a new one.', {
-            title: 'Character Slots Full',
-            message: 'You have reached the maximum number of characters. Please delete a character to create a new one.',
-            onOk: () => window.location.href = 'dashboard.html'
-        });
-        return;
-    }
+        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+        const userCharacterCount = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase()).length;
+        const maxSlots = serverProps.MAX_CHARACTER_SLOTS || 6;
+
+        if (userCharacterCount >= maxSlots) {
+            showInfoModal('Character Slots Full', 'You have reached the maximum number of characters. Please delete one from the dashboard to create a new one.', {
+                onOk: () => {
+                    // Close the form and redirect to the dashboard
+                    toggleForm('characterCreationForm');
+                    window.location.href = 'dashboard.html';
+                }
+            });
+            return;
+        }
+
+        // Populate classes and set up listeners
+        populateAndHandleClassSelection();
+        isCharCreateInitialized = true;
+        console.log('[Debug] Character Creation form initialized.');
+    };
 
     // --- Character Creation Form ---
     const creationForm = document.getElementById('character-creation-form');
@@ -120,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (charNameInput && charNameStatus) {
         charNameInput.addEventListener('input', debounce(() => {
+            const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
             const name = charNameInput.value.trim();
             if (name.length < 3) {
                 charNameStatus.textContent = '';
@@ -137,6 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (creationForm) {
         creationForm.addEventListener('submit', function(event) {
             event.preventDefault();
+            const session = JSON.parse(localStorage.getItem('session')); // Re-check session on submit
+            const serverProps = window.serverProperties;
             const messageDiv = document.getElementById('character-creation-message');
 
             const charName = this.elements.charname.value;
@@ -152,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const currentUserCharacterCount = currentCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase()).length;
-            if (currentUserCharacterCount >= maxSlots) {
+            if (currentUserCharacterCount >= (serverProps.MAX_CHARACTER_SLOTS || 6)) {
                 messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Character slots are full. You cannot create more characters.</p>`;
                 return;
             }
@@ -177,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 inventory: []
             };
 
-            const starterInventory = window.serverProperties.STARTER_INVENTORY_JSON;
+            const starterInventory = serverProps.STARTER_INVENTORY_JSON;
             newCharacter.inventory = starterInventory.map(item => ({ ...item, id: generateUUID() }));
 
             currentCharacters.push(newCharacter);
@@ -192,32 +153,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Populate and Handle Character Class Selection ---
-    const classSelectionGrid = document.getElementById('class-selection-grid');
-    const classSelectDropdown = document.getElementById('class-select');
+    function populateAndHandleClassSelection() {
+        const classSelectionGrid = document.getElementById('class-selection-grid');
+        const classSelectDropdown = document.getElementById('class-select');
 
-    if (classSelectionGrid && classSelectDropdown) {
+        if (!classSelectionGrid || !classSelectDropdown) return;
+
+        // Check if classes are already rendered to prevent duplication
+        if (classSelectionGrid.children.length > 0) return;
+
         const classes = [
-            { name: 'Monarch', icon: '👑' },
-            { name: 'Knight', icon: '🛡️' },
-            { name: 'Elf', icon: '🏹' },
-            { name: 'Mage', icon: '🔮' },
-            { name: 'Dark Elf', icon: '🗡️' },
-            { name: 'Dragon Knight', icon: '🐉' },
+            { name: 'Monarch', icon: '👑' }, { name: 'Knight', icon: '🛡️' },
+            { name: 'Elf', icon: '🏹' }, { name: 'Mage', icon: '🔮' },
+            { name: 'Dark Elf', icon: '🗡️' }, { name: 'Dragon Knight', icon: '🐉' },
             { name: 'Warrior', icon: '⚔️' }
         ];
 
-        function renderClasses(previouslySelectedClass = null) {
-            classSelectionGrid.innerHTML = '';
-            classSelectDropdown.innerHTML = '';
+        const renderClasses = (previouslySelectedClass = null) => {
+            classSelectionGrid.innerHTML = ''; // Clear previous cards
+            classSelectDropdown.innerHTML = ''; // Clear previous options
 
             classes.forEach((cls, index) => {
                 const card = document.createElement('div');
                 card.className = 'class-card';
                 card.dataset.value = cls.name;
-                card.innerHTML = `
-                    <div class="class-icon">${cls.icon}</div>
-                    <div class="class-name">${cls.name}</div>
-                `;
+                card.innerHTML = `<div class="class-icon">${cls.icon}</div><div class="class-name">${cls.name}</div>`;
+
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    classSelectDropdown.value = cls.name;
+                });
 
                 const option = document.createElement('option');
                 option.value = cls.name;
@@ -228,34 +194,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                     option.selected = true;
                 }
 
-                card.addEventListener('click', () => {
-                    document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
-                    card.classList.add('selected');
-                    classSelectDropdown.value = cls.name;
-                });
-
                 classSelectionGrid.appendChild(card);
                 classSelectDropdown.appendChild(option);
             });
-        }
+        };
 
         renderClasses();
 
         const genderRadios = document.querySelectorAll('input[name="gender"]');
         genderRadios.forEach(radio => {
             radio.addEventListener('change', () => {
-                const currentSelectedClass = classSelectDropdown.value;
                 const selectedGender = document.querySelector('input[name="gender"]:checked').value;
                 const monarchClass = classes.find(c => c.name === 'Monarch' || c.name === 'Princess');
                 if (monarchClass) {
-                    if (selectedGender === 'Female') {
-                        monarchClass.name = 'Princess';
-                    } else {
-                        monarchClass.name = 'Monarch';
-                    }
-                    renderClasses(currentSelectedClass);
+                    monarchClass.name = (selectedGender === 'Female') ? 'Princess' : 'Monarch';
+                    renderClasses(classSelectDropdown.value); // Re-render with the correct gender-specific class name
                 }
             });
         });
     }
+
+    // Use a MutationObserver to initialize the form only when it becomes visible.
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class' && !creationFormSection.classList.contains('hidden')) {
+                initializeCharacterCreation();
+            }
+        }
+    });
+    if (creationFormSection) observer.observe(creationFormSection, { attributes: true });
 });

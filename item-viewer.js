@@ -1,8 +1,12 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+    const itemViewerSection = document.getElementById('itemViewer');
+    if (!itemViewerSection) return;
+
     const itemContainer = document.getElementById('item-viewer-container');
     const loadingText = document.getElementById('item-viewer-loading');
     const searchInput = document.getElementById('item-search');
     let allItems = [];
+    let isLoaded = false;
 
     /**
      * A robust parser for SQL INSERT values using a regular expression.
@@ -27,7 +31,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     /**
      * Fetches and parses the armor.sql file.
      */
-    async function loadItems() {
+    const loadItems = async () => {
+        if (isLoaded) return; // Prevent re-loading
+
         try {
             const response = await fetch('data/armor.sql');
             if (!response.ok) {
@@ -64,6 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             allItems = armorData;
+            isLoaded = true;
+            console.log('[Debug] Item Viewer data loaded.');
             renderItems();
         } catch (error) {
             console.error("Failed to load item data:", error);
@@ -72,12 +80,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loadingText.classList.add('text-red-500');
             }
         }
-    }
+    };
 
     /**
      * Renders the items based on the current search filter.
      */
-    function renderItems() {
+    const renderItems = () => {
         if (!itemContainer || !loadingText) return;
 
         const searchTerm = searchInput.value.toLowerCase().trim();
@@ -161,12 +169,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             itemContainer.appendChild(card);
         });
-    }
+    };
 
     /**
      * Creates a debounced function that delays invoking func.
      */
-    function debounce(func, wait) {
+    const debounce = (func, wait) => {
         let timeout;
         return function executedFunction(...args) {
             const later = () => {
@@ -177,23 +185,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             timeout = setTimeout(later, wait);
         };
     }
+    
+    const initializeItemViewer = async () => {
+        await loadItems(); // This will only run once thanks to the isLoaded flag
 
-    // --- Initial Load & Event Listeners ---
-    loadItems();
-
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(renderItems, 300));
-    }
-
-    // --- Favicon ---
-    (async () => {
-        const response = await fetch('server.properties');
-        const text = await response.text();
-        const match = text.match(/^FAVICON_PATH=(.*)$/m);
-        if (match && match[1]) {
-            const path = match[1].trim();
-            document.getElementById('favicon-ico').href = path;
-            document.getElementById('favicon-shortcut').href = path;
+        if (searchInput) {
+            // Ensure listener is only attached once
+            if (!searchInput.dataset.listenerAttached) {
+                searchInput.addEventListener('input', debounce(renderItems, 300));
+                searchInput.dataset.listenerAttached = 'true';
+            }
         }
-    })();
+        console.log('[Debug] Item Viewer initialized.');
+    };
+
+    // Use a MutationObserver to initialize the item viewer only when it becomes visible.
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class' && !itemViewerSection.classList.contains('hidden')) {
+                initializeItemViewer();
+            }
+        }
+    });
+    observer.observe(itemViewerSection, { attributes: true });
 });

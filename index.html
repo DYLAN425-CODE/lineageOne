@@ -23,6 +23,179 @@
 
   <!-- External CSS -->
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Custom Styles for Password Strength Meter -->
+  <style>
+    #password-strength-meter {
+      display: flex;
+      height: 5px;
+      gap: 3px;
+      margin-top: 8px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    #password-strength-meter .strength-bar {
+      flex-grow: 1;
+      background-color: #374151; /* gray-700 */
+      transition: background-color 0.3s ease-in-out;
+    }
+    .password-req {
+      transition: color 0.3s ease-in-out;
+      color: #9ca3af; /* gray-400 */
+    }
+    .password-req.met {
+      color: #4ade80; /* green-400 */
+      text-decoration: line-through;
+    }
+    .password-req.met::before {
+      content: '✔ ';
+    }
+    /* Marketplace-specific styles from marketplace.html */
+    .market-panel {
+        background-color: rgba(10, 10, 20, 0.85);
+        border: none; /* Removed border for a cleaner glass look */
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+        min-height: 60vh;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .market-item {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-left: 3px solid #6b7280;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .market-search-input {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px; /* Pill shape */
+        background-color: rgba(0, 0, 0, 0.4);
+        border: 2px solid #4a3a2a;
+        color: #e5e7eb;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .market-search-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); /* Add a glow effect to the input field */
+    }
+    /* Character Creation-specific styles from create-character.html */
+    .gender-select-container {
+      display: flex;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 1px solid #4a3a2a;
+    }
+    .gender-select-container input[type="radio"] {
+      display: none; /* Hide the actual radio button */
+    }
+    .gender-select-label {
+      flex-grow: 1;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.4);
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .gender-select-label:hover {
+      background-color: rgba(245, 158, 11, 0.3);
+    }
+    .gender-select-container input[type="radio"]:checked + .gender-select-label {
+      background-color: #f59e0b;
+      color: #1a1a1a;
+      text-shadow: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .class-card {
+      background-color: rgba(0, 0, 0, 0.4);
+      border: 2px solid #4a3a2a;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    /* Dashboard-specific styles from dashboard.html */
+    .stat-item {
+        border-bottom: 1px solid #3a2d20;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    .equip-slot {
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px solid #4a3a2a;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .storage-item {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-left: 3px solid #6b7280;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .character-slot {
+        background-color: rgba(10, 10, 20, 0.75);
+        border: none; /* Removed border for a cleaner glass look */
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(3px);
+        min-height: 200px;
+        position: relative; /* Required for the ::before pseudo-element */
+        overflow: hidden;   /* Clips the flowing effect */
+    }
+    .character-slot::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 75%;
+        height: 100%;
+        background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+        transform: skewX(-25deg);
+        animation: flow-shine 5s infinite linear;
+    }
+
+    @keyframes flow-shine {
+        from { left: -150%; }
+        to   { left: 150%; }
+    }
+    /* Remove border specifically from the logout modal for a cleaner glass look */
+    #logout-modal-content {
+        border: none;
+    }
+    /* Item Viewer-specific styles from item-viewer.html */
+    .item-card {
+        background-color: rgba(10, 10, 20, 0.6);
+        border: 1px solid #3a2d20;
+        /* backdrop-filter: blur(3px); */
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 15px rgba(252, 207, 63, 0.3);
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+    .stat-item {
+        background-color: rgba(0,0,0,0.2);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+  </style>
   
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
@@ -57,9 +230,9 @@
         <button id="login-button" class="action-btn btn-blue">Login</button>
         <button id="register-button" class="action-btn btn-green">Register</button>
         <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
-        <a href="droplist.html" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
-        <a href="marketplace.html" id="marketplace-button" class="action-btn btn-orange">Marketplace</a>
-        <a href="item-viewer.html" id="item-viewer-button" class="action-btn btn-green">Item Viewer</a>
+        <button id="droplist-button" class="action-btn btn-yellow">Drop List</button>
+        <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
+        <button id="item-viewer-button" class="action-btn btn-green">Item Viewer</button>
         <button id="download-button-header" class="action-btn btn-purple">Download</button>
         <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
       </div>
@@ -93,12 +266,12 @@
         <fieldset class="space-y-4">
           <legend id="login-heading" class="text-2xl font-bold mb-4 text-center">Login</legend>
         <div class="form-group">
-          <input type="text" id="login-username" name="username" required class="form-input" placeholder=" " aria-describedby="login-username-error" />
+          <input type="text" id="login-username" name="username" required class="form-input" placeholder=" " aria-describedby="login-username-error" autocomplete="username" />
           <label for="login-username" class="form-label">Username</label>
           <div id="login-username-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
         </div>
         <div class="form-group">
-          <input type="password" id="login-password" name="password" required class="form-input" placeholder=" " aria-describedby="login-password-error" />
+          <input type="password" id="login-password" name="password" required class="form-input" placeholder=" " aria-describedby="login-password-error" autocomplete="current-password" />
           <label for="login-password" class="form-label">Password</label>
           <button type="button" class="password-toggle-icon" aria-label="Show password" aria-pressed="false">
             <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -129,23 +302,38 @@
         <fieldset class="space-y-4">
           <legend id="register-heading" class="text-2xl font-bold mb-4 text-center">Register Account</legend>
         <div class="form-group">
-          <input type="text" id="register-username" name="username" required class="form-input" placeholder=" " aria-describedby="register-username-error" />
+          <input type="text" id="register-username" name="username" required class="form-input" placeholder=" " aria-describedby="register-username-error" autocomplete="username" />
           <label for="register-username" class="form-label">Username</label>
           <div id="register-username-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
         </div>
         <div class="form-group">
-          <input type="email" id="register-email" name="email" required class="form-input" placeholder=" " aria-describedby="register-email-error" />
+          <input type="email" id="register-email" name="email" required class="form-input" placeholder=" " aria-describedby="register-email-error" autocomplete="email" />
           <label for="register-email" class="form-label">Email (e.g., @gmail.com)</label>
           <div id="register-email-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
         </div>
         <div class="form-group">
-          <input type="password" id="register-password" name="password" required class="form-input" placeholder=" " aria-describedby="register-password-error" />
+          <input type="password" id="register-password" name="password" required class="form-input" placeholder=" " aria-describedby="register-password-error" autocomplete="new-password" />
           <label for="register-password" class="form-label">Password</label>
           <button type="button" class="password-toggle-icon" aria-label="Show password" aria-pressed="false">
             <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>
           </button>
           <div id="register-password-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+          <!-- Password Strength Meter -->
+          <div id="password-strength-meter">
+            <div class="strength-bar"></div><div class="strength-bar"></div><div class="strength-bar"></div><div class="strength-bar"></div>
+          </div>
+          <div id="password-requirements" class="text-xs space-y-1 mt-2">
+            <p id="req-length" class="password-req">At least 8 characters</p>
+            <p id="req-uppercase" class="password-req">An uppercase letter</p>
+            <p id="req-number" class="password-req">A number</p>
+            <p id="req-special" class="password-req">A special character (!@#$%^&*)</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <input type="password" id="register-confirm-password" name="confirm_password" required class="form-input" placeholder=" " aria-describedby="register-confirm-password-error" autocomplete="new-password" />
+          <label for="register-confirm-password" class="form-label">Confirm Password</label>
+          <div id="register-confirm-password-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
         </div>
         <button class="w-full action-btn btn-green mt-4">Register</button>
         </fieldset>
@@ -155,40 +343,34 @@
     <!-- ========================================================================
     FORGOT PASSWORD FORM
     ======================================================================== -->
-    <section id="forgotPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="forgot-heading">
-      <div id="forgot-password-message" role="alert" class="text-center mb-4"></div>
-      <form id="forgot-password-form">
+    <section id="passwordResetFlow" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="reset-flow-heading">
+      <div id="password-reset-message" role="alert" class="text-center mb-4"></div>
+      <form id="password-reset-form">
         <fieldset class="space-y-4">
-          <legend id="forgot-heading" class="text-2xl font-bold mb-4 text-center">Retrieve Password</legend>
-          <p class="text-sm text-gray-400 mb-4 text-center">Enter your registered email to retrieve your password.</p>
-        <div class="form-group">
-          <input type="email" id="forgot-email" name="email" placeholder=" " required class="form-input" />
-          <label for="forgot-email" class="form-label">✉️ Email Address</label>
-        </div>
-        <button class="w-full action-btn btn-orange mt-4">Retrieve Password</button>
-        </fieldset>
-      </form>
-    </section>
+          <legend id="reset-flow-heading" class="text-2xl font-bold mb-4 text-center">Reset Password</legend>
 
-    <!-- ========================================================================
-    RESET PASSWORD FORM (after getting code)
-    ======================================================================== -->
-    <section id="resetPasswordForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="reset-heading">
-      <div id="reset-password-message" role="alert" class="text-center mb-4"></div>
-      <form id="reset-password-form">
-        <fieldset class="space-y-4">
-          <legend id="reset-heading" class="text-2xl font-bold mb-4 text-center">Reset Your Password</legend>
-        <!-- This field will hold the email of the user resetting the password -->
-        <input type="hidden" id="reset-email" name="email" />
-        <div class="form-group">
-          <input type="text" id="reset-code" name="code" placeholder=" " required class="form-input" />
-          <label for="reset-code" class="form-label">🔑 Reset Code</label>
-        </div>
-        <div class="form-group">
-          <input type="password" id="reset-new-password" name="new_password" placeholder=" " required class="form-input" />
-          <label for="reset-new-password" class="form-label">New Password</label>
-        </div>
-        <button class="w-full action-btn btn-green mt-4">Set New Password</button>
+          <!-- Step 1: Enter Email -->
+          <div id="reset-step-1">
+            <p class="text-sm text-gray-400 mb-4 text-center">Enter your registered email to receive a reset code.</p>
+            <div class="form-group">
+              <input type="email" id="reset-email" name="email" placeholder=" " required class="form-input" autocomplete="email" />
+              <label for="reset-email" class="form-label">✉️ Email Address</label>
+            </div>
+            <button type="submit" class="w-full action-btn btn-orange mt-4">Send Code</button>
+          </div>
+
+          <!-- Step 2: Enter Code and New Password (Initially Hidden) -->
+          <div id="reset-step-2" class="hidden">
+            <div class="form-group">
+              <input type="text" id="reset-code" name="code" placeholder=" " required class="form-input" autocomplete="one-time-code" />
+              <label for="reset-code" class="form-label">🔑 Reset Code</label>
+            </div>
+            <div class="form-group">
+              <input type="password" id="reset-new-password" name="new_password" placeholder=" " required class="form-input" autocomplete="new-password" />
+              <label for="reset-new-password" class="form-label">New Password</label>
+            </div>
+            <button type="submit" class="w-full action-btn btn-green mt-4">Set New Password</button>
+          </div>
         </fieldset>
       </form>
     </section>
@@ -199,11 +381,7 @@
     <section id="download" class="text-center py-10 fade-in hidden">
       <h2 class="cinematic-title cinematic-title-red text-2xl font-semibold mb-4">⬇️ Download Game Client</h2>
       <a href="downloads/L1P8.1.zip" id="download-btn" class="action-btn btn-purple">
-        <span class="btn-text-original">Download Now</span>
-        <div class="download-progress-container hidden">
-          <div class="bouncing-ball"></div>
-          <span class="download-percentage">0%</span>
-        </div>
+        <span class="btn-text">Download Now</span>
       </a>
     </section>
 
@@ -214,6 +392,187 @@
       <h2 class="text-2xl font-bold mb-4">💬 Join our Discord Community</h2>
       <p class="text-gray-300 mb-4">Get support, updates, and chat with fellow players.</p>
       <a href="https://discord.gg/SH8unyQRf7" target="_blank" rel="noopener noreferrer" class="action-btn btn-indigo">Join Discord</a>
+    </section>
+
+    <!-- ========================================================================
+    CHARACTER CREATION FORM
+    ======================================================================== -->
+    <section id="characterCreationForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="char-create-heading">
+      <div id="character-creation-message" role="alert" class="text-center mb-4"></div>
+      <form id="character-creation-form">
+        <fieldset class="space-y-4">
+          <legend id="char-create-heading" class="text-2xl font-bold mb-4 text-center">Create Your Character</legend>
+        <div class="form-group">
+          <input type="text" id="charname" name="charname" placeholder=" " required class="form-input" />
+          <label for="charname" class="form-label">✨ Character Name</label>
+          <div id="charname-error" class="text-sm mt-1" aria-live="polite"></div>
+        </div>
+        
+        <!-- Gender Selection -->
+        <fieldset class="pt-2">
+          <legend class="font-bold text-lg mb-2 block text-center">Gender</legend>
+          <div class="gender-select-container">
+            <input type="radio" id="gender-male" name="gender" value="Male" checked>
+            <label for="gender-male" class="gender-select-label">Male</label>
+            <input type="radio" id="gender-female" name="gender" value="Female">
+            <label for="gender-female" class="gender-select-label">Female</label>
+          </div>
+        </fieldset>
+
+        <!-- Class Selection -->
+        <fieldset class="pt-2">
+          <legend class="font-bold text-lg mb-2 block text-center">Class</legend>
+          <div id="class-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Class cards will be generated by JS -->
+          </div>
+          <!-- Hidden select for form submission -->
+          <select name="class" id="class-select" required class="hidden">
+             <!-- Options will be generated by JS -->
+          </select>
+        </fieldset>
+
+        <div class="flex gap-4 mt-4">
+          <button type="button" id="create-char-back-btn" class="w-full action-btn btn-gray text-center">Back</button>
+          <button type="submit" class="w-full action-btn btn-green">Create Character</button>
+        </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- ========================================================================
+    MARKETPLACE
+    ======================================================================== -->
+    <section id="marketplace" class="max-w-7xl mx-auto py-10 fade-in hidden">
+        <div class="text-center w-full">
+            <h1 class="text-4xl font-bold text-yellow-400 mb-2 tracking-wider text-shadow">Marketplace</h1>
+            <p class="text-gray-400 mb-6 text-shadow">Buy and sell goods from the world of Aden.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
+                <!-- Buy Panel -->
+                <div>
+                    <h2 class="text-2xl font-semibold mb-4 text-center text-green-400 text-shadow">Buy Items</h2>
+                    <div class="mb-4">
+                        <input type="text" id="market-search" placeholder="Search for an item..." class="market-search-input">
+                    </div>
+                    <div id="buy-panel" class="market-panel p-4 rounded-lg">
+                        <!-- Items to buy will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Sell Panel -->
+                <div>
+                    <div class="flex justify-center items-center gap-4 mb-4">
+                        <h2 class="text-2xl font-semibold text-red-400 text-shadow">Sell Items</h2>
+                        <select id="character-select-dropdown" class="bg-gray-800 border border-gray-600 rounded-md px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                        <button id="combine-sell-items-btn" class="bg-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-500 transition" title="Combine all stackable items">Combine</button>
+                    </div>
+                    <div id="sell-panel" class="market-panel p-4 rounded-lg">
+                        <!-- Character's inventory for selling will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+    DASHBOARD
+    ======================================================================== -->
+    <section id="dashboard" class="p-8 rounded-lg text-center max-w-6xl w-full mx-auto hidden">
+        <h1 class="text-4xl font-bold text-yellow-400 mb-2 tracking-wider text-shadow">Welcome, <span id="dashboard-username">Player</span>!</h1>
+        
+        <!-- Character Select View -->
+        <div id="character-select-view">
+            <p id="dashboard-subtitle" class="text-gray-400 mb-6 text-shadow">Select a character to begin.</p>
+            <div id="character-slots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                <!-- Character slots will be dynamically generated here -->
+            </div>
+        </div>
+
+        <!-- Character Detail View (Initially Hidden) -->
+        <div id="character-detail-view" class="hidden">
+            <div class="flex justify-start gap-4">
+                <button id="back-to-select-btn-2" class="action-btn btn-gray">Back</button>
+                <button id="go-to-market-btn" class="action-btn btn-orange">Go to Marketplace</button>
+            </div>
+            <div id="character-display" class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 text-left">
+                <!-- Status and Equipment panels are rendered here -->
+            </div>
+            <div id="character-storage-panel" class="mt-8 text-left"></div>
+        </div>
+
+        <div class="flex justify-center items-center gap-4 mt-8 text-shadow">
+            <button id="delete-account-btn" class="text-sm text-red-500 hover:text-red-400 hover:underline">Delete Account</button>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+    DROP LIST
+    ======================================================================== -->
+    <section id="droplist" class="max-w-4xl mx-auto w-full flex-grow relative z-10 min-h-0 transition-all duration-300 hidden flex-col">
+        <!-- Fixed Header Section -->
+        <div class="flex-shrink-0">
+          <header class="flex justify-between items-center pt-8 pb-4">
+            <div class="flex-1">
+              <button id="droplist-back-btn" class="action-btn btn-gray">Return to Main</button>
+            </div>
+            <h2 class="flex-1 text-3xl font-bold text-center text-yellow-400 text-shadow">
+              Drop List
+            </h2>
+            <div class="flex-1"></div>
+          </header>
+    
+          <div id="sort-controls" class="flex justify-end space-x-4 mb-4"></div>
+          <div class="search-container mb-6 relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <input type="text" id="droplist-search" placeholder="Search for an item or monster..." class="droplist-search-input" />
+          </div>
+        </div>
+    
+        <!-- Scrollable Content Section -->
+        <div class="flex-grow overflow-y-auto pr-2">
+          <div id="droplist-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p id="droplist-loading" class="text-center col-span-full">Loading drop list...</p>
+          </div>
+          <div id="pagination-controls" class="flex justify-center items-center gap-4 py-4 sticky bottom-0 bg-black/50 backdrop-blur-sm rounded-t-lg"></div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+    ITEM VIEWER
+    ======================================================================== -->
+    <section id="itemViewer" class="max-w-7xl mx-auto w-full flex-grow relative z-10 min-h-0 transition-all duration-300 hidden flex-col">
+        <!-- Fixed Header Section -->
+        <div class="flex-shrink-0">
+          <header class="flex justify-between items-center pt-8 pb-4">
+            <div class="flex-1">
+              <button id="item-viewer-back-btn" class="action-btn btn-gray">Return to Main</button>
+            </div>
+            <h2 class="flex-1 text-3xl font-bold text-center text-yellow-400 text-shadow">
+              Item Viewer
+            </h2>
+            <div class="flex-1"></div>
+          </header>
+    
+          <div class="search-container mb-6 relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <input type="text" id="item-search" placeholder="Search for an item..." class="droplist-search-input" />
+          </div>
+        </div>
+    
+        <!-- Scrollable Content Section -->
+        <div id="item-viewer-container" class="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p id="item-viewer-loading" class="text-center col-span-full">Loading item data...</p>
+        </div>
     </section>
 
     <!-- ========================================================================
@@ -243,43 +602,6 @@
     </section>
 
     <!-- ========================================================================
-    IMAGE LIGHTBOX/MODAL
-    ======================================================================== -->
-    <div id="lightbox" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-      <img id="lightbox-img" src="" alt="Enlarged gallery image" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 scale-95">
-      <!-- Lightbox Navigation -->
-      <button id="lightbox-prev" class="lightbox-nav-btn left-4">&lt;</button>
-      <button id="lightbox-next" class="lightbox-nav-btn right-4">&gt;</button>
-      <button id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold opacity-70 hover:opacity-100 transition-opacity">&times;</button>
-    </div>
-
-    <!-- ========================================================================
-    GENERIC SUCCESS MODAL
-    ======================================================================== -->
-    <div id="success-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="success-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
-            <h2 id="success-modal-title" class="text-2xl font-bold text-green-400 mb-4">Success!</h2>
-            <p id="success-modal-message" class="text-gray-300 mb-6">Operation completed successfully.</p>
-            <div class="flex justify-center gap-4">
-                <button id="success-modal-ok-btn" class="action-btn btn-green">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-    GENERIC INFO/WARNING MODAL
-    ======================================================================== -->
-    <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="info-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
-            <h2 id="info-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
-            <p id="info-modal-message" class="text-gray-300 mb-6">This is an informational message.</p>
-            <div class="flex justify-center gap-4">
-                <button id="info-modal-ok-btn" class="action-btn btn-blue">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================================================
     FOOTER
     ======================================================================== -->
     <footer class="text-center py-6 text-sm text-gray-400 space-y-4">
@@ -296,8 +618,138 @@
 
   </div>
 
+  <!-- ========================================================================
+  MODALS (Placed outside main-content to prevent visibility issues)
+  ======================================================================== -->
+
+  <!-- IMAGE LIGHTBOX/MODAL -->
+  <div id="lightbox" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <img id="lightbox-img" src="" alt="Enlarged gallery image" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 scale-95">
+    <!-- Lightbox Navigation -->
+    <button id="lightbox-prev" class="lightbox-nav-btn left-4">&lt;</button>
+    <button id="lightbox-next" class="lightbox-nav-btn right-4">&gt;</button>
+    <button id="lightbox-close" class="absolute top-4 right-6 text-white text-5xl font-bold opacity-70 hover:opacity-100 transition-opacity">&times;</button>
+  </div>
+
+  <!-- GENERIC SUCCESS MODAL -->
+  <div id="success-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="success-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="success-modal-title" class="text-2xl font-bold text-green-400 mb-4">Success!</h2>
+          <p id="success-modal-message" class="text-gray-300 mb-6">Operation completed successfully.</p>
+          <div class="flex justify-center gap-4">
+              <button id="success-modal-ok-btn" class="action-btn btn-green">OK</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- GENERIC INFO/WARNING MODAL -->
+  <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="info-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="info-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
+          <p id="info-modal-message" class="text-gray-300 mb-6">This is an informational message.</p>
+          <div class="flex justify-center gap-4">
+              <button id="info-modal-ok-btn" class="action-btn btn-blue">OK</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- DEDICATED NOTIFICATION MODAL (for specific messages) -->
+  <div id="notification-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="notification-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="notification-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
+          <p id="notification-modal-message" class="text-gray-300 mb-6">This is a notification.</p>
+          <div class="flex justify-center gap-4">
+              <button id="notification-modal-ok-btn" class="action-btn btn-blue">OK</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- ========================================================================
+    MARKETPLACE MODALS
+    ======================================================================== -->
+  <!-- QUANTITY INPUT MODAL (for Buy/Sell) -->
+  <div id="quantity-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="quantity-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="quantity-modal-title" class="text-2xl font-bold mb-4 text-shadow">Enter Quantity</h2>
+          <p id="quantity-modal-item-name" class="text-lg text-yellow-300 mb-2">Item Name</p>
+          <p id="quantity-modal-message" class="text-gray-400 mb-4 text-sm">How many would you like to buy/sell?</p>
+          
+          <input type="number" id="quantity-input" min="1" class="w-full bg-gray-900/50 border border-gray-600 rounded-md p-2 text-center text-2xl text-white mb-4" value="1">
+          
+          <div class="text-lg mb-6">
+              <span>Total: </span><span id="quantity-total-price" class="font-bold text-yellow-400">0 Adena</span>
+          </div>
+
+          <div class="flex justify-center gap-4">
+              <button id="quantity-confirm-btn" class="action-btn btn-green">Confirm</button>
+              <button id="quantity-cancel-btn" class="action-btn btn-red">Cancel</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- GENERIC CONFIRMATION MODAL (for Deletion, etc.) -->
+  <div id="confirm-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="confirm-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="confirm-modal-title" class="text-2xl font-bold text-yellow-400 mb-4 text-shadow">Confirm Action</h2>
+          <p id="confirm-modal-message" class="text-gray-300 mb-6">Are you sure?</p>
+          <!-- Type-to-confirm input section (hidden by default) -->
+          <div id="confirm-input-container" class="my-4 hidden">
+              <label id="confirm-input-label" for="confirm-input" class="text-sm text-gray-400 block mb-2">To confirm, please type the text below:</label>
+              <p id="confirm-input-text" class="font-bold text-lg text-yellow-300 tracking-widest mb-2"></p>
+              <input type="text" id="confirm-input" class="w-full bg-gray-900/50 border border-gray-600 rounded-md p-2 text-center text-white" autocomplete="off">
+          </div>
+          <div class="flex justify-center gap-4">
+              <button id="confirm-modal-confirm-btn" class="action-btn btn-red">Confirm</button>
+              <button id="confirm-modal-cancel-btn" class="action-btn btn-gray">Cancel</button>
+          </div>
+      </div>
+  </div>
+
   <!-- External JS -->
   <script src="modal.js"></script>
+  <script src="item-viewer.js"></script>
+  <script src="droplist.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="create-character.js"></script>
+  <script src="marketplace.js"></script>
   <script src="script.js"></script>
+
+  <!-- ========================================================================
+  MODAL DEBUGGING SCRIPT
+  ======================================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[Debug] DOM fully loaded. Initializing modal debugger.');
+
+      const modalIds = [
+        'loginForm', 'registerForm', 'passwordResetFlow', 'marketplace', 'characterCreationForm', 'dashboard', 'droplist', 'itemViewer',
+        'lightbox', 'success-modal', 'info-modal', 'quantity-modal', 'confirm-modal', 'notification-modal', 'item-viewer-modal'
+      ];
+
+      const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            const target = mutation.target;
+            const isHidden = target.classList.contains('hidden');
+            if (isHidden) {
+              console.log(`[Debug] Modal/Panel hidden: #${target.id}`);
+            } else {
+              console.log(`[Debug] Modal/Panel shown: #${target.id}`);
+            }
+          }
+        }
+      });
+
+      modalIds.forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal) {
+          observer.observe(modal, { attributes: true });
+          console.log(`[Debug] Watching for changes on #${id}`);
+        } else {
+          console.warn(`[Debug] Modal/Panel with id #${id} not found.`);
+        }
+      });
+    });
+  </script>
 </body>
 </html>

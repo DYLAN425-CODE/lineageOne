@@ -43,22 +43,6 @@ html {
     filter: blur(0);
   }
 }
-
-/* === Keyframes for shake animation on error modals === */
-@keyframes shake {
-  10%, 90% {
-    transform: translate3d(-1px, 0, 0) scale(1);
-  }
-  20%, 80% {
-    transform: translate3d(2px, 0, 0) scale(1);
-  }
-  30%, 50%, 70% {
-    transform: translate3d(-4px, 0, 0) scale(1);
-  }
-  40%, 60% {
-    transform: translate3d(4px, 0, 0) scale(1);
-  }
-}
 /* === Cinematic Glow Title === */
 .cinematic-title span {
   display: inline-block; /* Required for transform */
@@ -127,7 +111,7 @@ html {
 /* Online Status */
 .status-dot.online {
   background-color: #24f7ec; /* green-400 */
-  animation: pulse-online 1.5s infinite;
+  animation: pulse-green 2s infinite;
 }
 
 /* Offline Status */
@@ -141,14 +125,9 @@ html {
   70% { box-shadow: 0 0 0 10px rgba(156, 163, 175, 0); }
 }
 
-@keyframes pulse-online {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(36, 247, 236, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(36, 247, 236, 0); }
-}
-
-@keyframes pulse-container {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
 }
 
 /* Spinning neon border effect */
@@ -194,13 +173,6 @@ html {
 }
 #server-status.status-online {
   border-color: #24f7ec; /* Keep a base green border for the glow to sit on */
-  animation: pulse-container 2s infinite ease-in-out;
-}
-
-/* Add a glow to the text when online */
-#server-status.status-online #status-text {
-    color: #fff;
-    text-shadow: 0 0 4px #fff, 0 0 8px #24f7ec;
 }
 /* ======================================================================== */
 /* ======================== NEWS & ANNOUNCEMENTS ========================== */
@@ -239,7 +211,7 @@ html {
   left: -150%; /* Start off-screen to the left */
   width: 75%;
   height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.15) 50%, rgba(252, 207, 63, 0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transform: skewX(-25deg); /* Angle the shine */
   /* Replace transition with a continuous animation */
   animation: flow-shine 4s infinite linear;
@@ -295,7 +267,7 @@ html {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Cover the screen without stretching, may crop edges */
+  object-fit: cover; /* Cover the screen without stretching */
   /* transition: opacity 0.5s ease-in-out; */ /* Fade transition removed */
 }
 
@@ -345,46 +317,32 @@ html {
   z-index: 2;
 }
 
-/* Download Progress Styles */
-.download-progress-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.bouncing-ball {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+/* --- New Progress Bar using ::before pseudo-element --- */
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0; /* JS will control this width */
   background-color: var(--neon-color);
-  animation: bounce 0.6s infinite alternate;
-}
-
-.download-percentage {
-  font-family: sans-serif; /* Use a more readable font for numbers */
-  font-weight: bold;
-}
-
-/* Hide original text when downloading */
-.action-btn.downloading .btn-text-original {
-  display: none;
-}
-
-/* Show progress container when downloading */
-.action-btn.downloading .download-progress-container {
-  display: flex;
-}
-
-@keyframes bounce {
-  from { transform: translateY(5px) scale(1, 0.8); }
-  to   { transform: translateY(-5px) scale(1, 1.2); }
+  z-index: 0; /* Place it behind the text */
+  transition: width 0.1s linear;
+  border-radius: 0.5rem; /* Match parent button */
 }
 
 /* Disabled state for buttons */
 .action-btn:disabled, button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* When downloading, force the hover state styles to persist */
+.action-btn.downloading {
+  background-color: transparent; /* Make original background transparent */
+  color: #08e5f5; /* Dark text for contrast */
+  text-shadow: none;
+  cursor: not-allowed;
 }
 
 /* === Button Color Styles === */
@@ -460,38 +418,14 @@ html {
 .ui-panel {
   position: relative;
   overflow: hidden;
-  background-color: rgba(10, 10, 20, 0.4);
+  background-color: rgba(10, 10, 20, 0.75);
   border: none;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-  /* backdrop-filter: blur(3px); */
+  backdrop-filter: blur(3px);
   border-radius: 0.5rem;
   padding: 2.5rem;
 }
 
-/* This style is for the maintenance page panel, which is dynamically created */
-.maintenance-panel {
-    position: relative;
-    overflow: hidden;
-    background-color: rgba(10, 10, 20, 0.4);
-    border: none;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    /* backdrop-filter: blur(3px); */
-    border-radius: 0.5rem;
-    padding: 2.5rem;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-    background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
-}
-
-/* === Social Media Link Styles === */
-.social-link {
-  color: #9ca3af; /* gray-400 */
-  transition: color 0.3s, transform 0.3s;
-}
-.social-link:hover {
-  color: #fff;
-  transform: scale(1.1);
-}
 /* ======================================================================== */
 /* =================== SHARED GLASS FLOW EFFECT ======================= */
 /* ======================================================================== */
@@ -510,7 +444,7 @@ html {
   left: -150%;
   width: 75%;
   height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.15) 50%, rgba(252, 207, 63, 0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transform: skewX(-25deg);
   animation-name: flow-shine;
   animation-timing-function: linear;
@@ -715,24 +649,6 @@ html {
   transform: scale(1.05); /* Add a subtle scale effect on hover */
 }
 
-/* === URGENT COUNTDOWN STYLES === */
-/* This class is added by script.js when the countdown is less than 24 hours */
-.countdown-urgent .timer-value {
-  color: #ef4444; /* red-500 */
-  /* Add a pulsing red glow animation */
-  animation: pulse-red-glow 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse-red-glow {
-  0%, 100% {
-    text-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444;
-  }
-  50% {
-    text-shadow: 0 0 10px #f87171, 0 0 20px #f87171, 0 0 30px #dc2626;
-  }
-}
-
-
 /* ======================================================================== */
 /* ======================== DROPLIST SEARCH STYLES ======================== */
 /* ======================================================================== */
@@ -775,73 +691,6 @@ html {
   transform: skewX(-25deg);
   animation: flow-shine 6s infinite linear;
   z-index: 0; /* Ensure it's behind the input's text */
-}
-
-/* ======================================================================== */
-/* ========================= MARKETPLACE STYLES ========================= */
-/* ======================================================================== */
-
-.market-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
-}
-
-.market-panel {
-  position: relative; /* Required for the pseudo-element */
-  overflow: hidden;   /* Clips the flowing glass effect */
-  background-color: rgba(10, 10, 20, 0.4);
-  border: none;
-  min-height: 60vh;
-  max-height: 70vh;
-  overflow-y: auto;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem; /* space between items */
-}
-
-/* The "flowing glass" shine effect for the marketplace panels */
-.market-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -150%; /* Start off-screen to the left */
-  width: 75%;
-  height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.1) 50%, rgba(252, 207, 63, 0) 100%);
-  transform: skewX(-25deg); /* Angle the shine */
-  animation: flow-shine 6s infinite linear;
-  z-index: 0; /* Position it above the background but below the items */
-}
-
-.market-item {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-left: 3px solid #6b7280;
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
-  border-radius: 0 4px 4px 0;
-}
-
-.market-item:hover {
-  background-color: rgba(30, 30, 40, 0.5);
-  border-color: #fccf3f;
-  box-shadow: 0 0 10px rgba(252, 207, 63, 0.4);
-}
-
-.market-search-input {
-  padding: 0.5rem 1rem;
-  border-radius: 9999px; /* Pill shape */
-  background-color: rgba(0, 0, 0, 0.4);
-  border: 1px solid #4a3a2a;
-  color: #e5e7eb;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  width: 250px; /* Give search a fixed width */
 }
 
 /* ======================================================================== */
@@ -937,10 +786,10 @@ html {
   left: -150%;
   width: 75%;
   height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.15) 50%, rgba(252, 207, 63, 0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transform: skewX(-25deg);
   animation: flow-shine 5s infinite linear;
-  z-index: 0; /* Ensure it's above the panel background but below content */
+  z-index: 1; /* Ensure it's above the panel background but below content */
 }
 
 /* Apply flowing glass effect to the quantity modal content */
@@ -951,10 +800,10 @@ html {
   left: -150%;
   width: 75%;
   height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.15) 50%, rgba(252, 207, 63, 0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transform: skewX(-25deg);
   animation: flow-shine 5s infinite linear;
-  z-index: 0; /* Ensure it's above the panel background but below content */
+  z-index: 1; /* Ensure it's above the panel background but below content */
 }
 /* Apply flowing glass effect to the notification modal content */
 #notification-modal-content::before {
@@ -964,10 +813,10 @@ html {
   left: -150%;
   width: 75%;
   height: 100%;
-  background: linear-gradient(to right, rgba(252, 207, 63, 0) 0%, rgba(252, 207, 63, 0.15) 50%, rgba(252, 207, 63, 0) 100%);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
   transform: skewX(-25deg);
   animation: flow-shine 5s infinite linear;
-  z-index: 0; /* Ensure it's above the panel background but below content */
+  z-index: 1; /* Ensure it's above the panel background but below content */
 }
 
 
@@ -975,65 +824,23 @@ html {
 /* ========================= MODAL BASE STYLES ========================== */
 /* ======================================================================== */
 
-.modal {
-  /* Base State: Hidden */
-  display: none; /* Use display to prevent interaction when hidden */
-  position: fixed;
-  z-index: 1000; /* Ensure it's on top of other content */
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto; /* Allow scrolling if content is too long */
-  background-color: rgba(0, 0, 0, 0.9); /* Dark overlay - increased from 0.75 */
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  /* Center the modal content */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Open State: Visible */
+/* Generic Modal open state */
 .modal.open {
-  display: flex; /* Change from none to flex to enable visibility */
   opacity: 1;
 }
-
-.modal-content {
-  position: relative;
-  /* Use the existing ui-panel styles for a consistent look */
-  background-color: rgba(10, 10, 20, 0.4);
-  border: none;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-  border-radius: 0.5rem;
-  padding: 2.5rem;
-  width: 90%;
-  max-width: 500px; /* Default max-width */
-  /* Animation for appearing */
-  transform: scale(0.95);
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-in-out;
-}
-
-/* Open State for Content */
 .modal.open .modal-content {
   transform: scale(1);
-  opacity: 1;
 }
 
-/* Close Button */
-.modal-close {
-  position: absolute;
-  top: 0.75rem;
-  right: 1rem;
-  color: #aaa;
-  font-size: 2rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.2s;
+/* Specific Modal IDs from dashboard.html and marketplace.html */
+#logout-modal.open #logout-modal-content,
+#confirm-modal.open #confirm-modal-content,
+#notification-modal.open #notification-modal-content {
+    transform: scale(1);
 }
 
-.modal-close:hover {
-  color: #fff;
+#logout-modal.open,
+#confirm-modal.open,
+#notification-modal.open {
+    opacity: 1;
 }
