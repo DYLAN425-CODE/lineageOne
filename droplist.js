@@ -33,41 +33,47 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Loads the drop list data from the text files.
      */
-    const loadDropList = async () => {
+    const parseSqlValues = (valuesString) => {
+        const regex = /'((?:[^']|'')*)'|(\d+)|(NULL)/g;
+        const values = [];
+        let match;
+        while ((match = regex.exec(valuesString)) !== null) {
+            const value = match[1] ?? match[2] ?? match[3];
+            values.push(value);
+        }
+        return values.map(v => {
+            if (v === 'NULL' || v === null) return null;
+            // Un-escape single quotes inside the string
+            if (typeof v === 'string') v = v.replace(/''/g, "'");
+            return isNaN(Number(v)) ? v : Number(v);
+        });
+    };
+
+    const loadDropList = async (sqlFilePath) => {
         const loadingText = document.getElementById('droplist-loading');
-        const serverProps = window.serverProperties;
-
         try {
-            const [mobsRes, itemsRes, levelsRes] = await Promise.all([
-                fetch(serverProps.MOB_NAMES_FILE_PATH),
-                fetch(serverProps.ITEM_NAMES_FILE_PATH),
-                fetch(serverProps.MOB_LEVELS_FILE_PATH) // Fetch the mob levels file
-            ]);
+            const response = await fetch(sqlFilePath);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const sqlText = await response.text();
+            const lines = sqlText.split('\n');
 
-            const mobsText = await mobsRes.text();
-            const itemsText = await itemsRes.text();
-            const levelsText = await levelsRes.text();
-
-            const mobs = mobsText.split('\n').map(m => m.trim()).filter(Boolean);
-            const items = itemsText.split('\n').map(i => i.trim()).filter(Boolean);
-            const levels = levelsText.split('\n').map(l => parseInt(l.trim(), 10)).filter(l => !isNaN(l));
-
-            const count = Math.min(mobs.length, items.length);
-            for (let i = 0; i < count; i++) {
-                let rate;
-                if (items[i].toLowerCase() === 'adena') {
-                    rate = '100.00%';
-                } else {
-                    // Use a skewed random number to make lower drop rates more common.
-                    // Math.pow(Math.random(), 3) generates a number between 0 and 1, but heavily skewed towards 0.
-                    const skewedRandom = Math.pow(Math.random(), 3);
-                    const rateValue = (skewedRandom * (10 - 0.01)) + 0.01; // Range from 0.01 to 10
-                    rate = `${rateValue.toFixed(4)}%`; // Use 4 decimal places for more precision on rare items
+            for (const line of lines) {
+                if (line.toUpperCase().startsWith('INSERT INTO `DROPLIST` VALUES')) {
+                    const valuesString = line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'));
+                    const values = parseSqlValues(valuesString);
+                    // Assuming columns: mob_id, mob_name, mob_level, item_id, item_name, min, max, drop_rate, is_quest
+                    const dropRate = (values[7] / 1000000) * 100; // Convert integer rate to percentage
+                    fullDropList.push({
+                        mob: values[1],
+                        item: values[4],
+                        rate: `${dropRate.toFixed(4)}%`,
+                        level: values[2]
+                    });
                 }
-                // Use the level from the file, or default to 1 if the file is shorter
-                const level = levels[i] || 1;
-                fullDropList.push({ mob: mobs[i], item: items[i], rate: rate, level: level });
             }
+
+            // Filter out any entries that might have empty names after parsing
+            fullDropList = fullDropList.filter(drop => drop.mob && drop.item);
 
             currentList = fullDropList;
             isLoaded = true;
@@ -144,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mobHTML = mobHTML.replace(regex, highlight);
             }
 
-            return `<div class="bg-gray-800 p-4 rounded-xl shadow transition-all"><p><span class="font-bold text-yellow-400">${itemHTML}</span> - Rate: <span class="text-green-400">${drop.rate}</span> - Dropped by: <span class="text-cyan-400">${mobHTML} (Lv. ${drop.level})</span></p></div>`;
+            return `<div class="bg-gray-800 p-4 rounded-xl shadow transition-all"><p><span class="font-bold text-yellow-400">${itemHTML}</span> - Rate: <span class="text-green-400">${drop.rate}</span> - Dropped by: <span class="text-cyan-400">${mobHTML} (Lv. ${drop.level || 'N/A'})</span></p></div>`;
         }).join('');
 
         // Set the innerHTML of the container once with the complete list.
@@ -231,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const serverProps = window.serverProperties;
         itemsPerPage = serverProps.DROPLIST_ITEMS_PER_PAGE;
 
-        await loadDropList();
+        await loadDropList('data/droplist.sql'); // Point to the new SQL file
         renderSortControls();
 
         const searchInput = document.getElementById('droplist-search');
