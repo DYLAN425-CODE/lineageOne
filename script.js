@@ -441,40 +441,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activePlayer = player1;
     let inactivePlayer = player2;
 
-    function playNextVideo() {
-        // When the first video ends, show the main content
-        if (currentPlayerIndex === 0 && mainContent) {
-            mainContent.classList.remove('hidden');
-            // The hash check logic has been moved to the main DOMContentLoaded block to run reliably.
-        }
+    function playNextVideo() {        
+      // When the first video ends, show the main content
+      if (currentPlayerIndex === 0 && mainContent) {
+          mainContent.classList.remove('hidden');
+      }
 
-        currentPlayerIndex++;
+      currentPlayerIndex++;
 
-        // If it's the last video, set it to loop and stop here
-        if (currentPlayerIndex >= videoSources.length) {
-            // This logic is for playlists longer than 2. For 2, it just loops the second.
-            return;
-        }
+      // If we've played all videos, stop. The last video will loop on its own.
+      if (currentPlayerIndex >= videoSources.length) {
+          return;
+      }
 
-        // This was causing an error because currentPlayerIndex was out of bounds.
-        // The logic should just transition to the next video in the array.
-        inactivePlayer.src = videoSources[currentPlayerIndex]; // Preload the next video
-        inactivePlayer.loop = (currentPlayerIndex === videoSources.length - 1); // Set loop for the last video
+      // Preload the next video into the currently inactive player
+      inactivePlayer.src = videoSources[currentPlayerIndex];
+      // The last video in the source array is the one that will loop forever
+      inactivePlayer.loop = (currentPlayerIndex === videoSources.length - 1);
+      inactivePlayer.play();
 
-        // Wait until the next video is ready to play before fading
-        inactivePlayer.addEventListener('canplaythrough', () => {
-            inactivePlayer.play();
-            activePlayer.style.opacity = '0';
-            inactivePlayer.style.opacity = '1';
+      // Fade out the old video and fade in the new one
+      activePlayer.style.opacity = '0';
+      inactivePlayer.style.opacity = '1';
 
-            // Swap player roles
-            [activePlayer, inactivePlayer] = [inactivePlayer, activePlayer];
-
-            // If the new active player is not the last one, listen for its 'ended' event
-            if (!activePlayer.loop) {
-                activePlayer.addEventListener('ended', playNextVideo, { once: true });
-            }
-        }, { once: true }); // Use { once: true } to ensure this listener only fires once
+      // Swap the active and inactive players for the next transition
+      [activePlayer, inactivePlayer] = [inactivePlayer, activePlayer];
     }
 
     // Start the sequence
@@ -588,6 +579,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       timeout = setTimeout(later, wait);
     };
   }
+
+  /**
+   * A simple, non-cryptographic hashing function for simulation purposes.
+   * IMPORTANT: This is NOT for production use. It's just to avoid storing plain-text passwords.
+   * @param {string} str The string to hash.
+   * @returns {Promise<string>} A promise that resolves to the hashed string.
+   */
+  async function simpleHash(str) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
   // ========================================================================
   //  HANDLE FORM SUBMISSION (SIMULATED BACKEND)
   // ========================================================================
@@ -597,7 +601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const registrationForm = document.getElementById('registration-form');
 
   if (registrationForm && registerFormContainer) {
-    registrationForm.addEventListener('submit', function(event) {
+    registrationForm.addEventListener('submit', async function(event) {
       event.preventDefault(); // Prevent the form from submitting to register.php
       console.log('[Debug] Registration form submitted.');
       clearFormErrors(this);
@@ -633,7 +637,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         console.log(`[Debug] Registration successful for user: ${username}`);
         // If user does not exist, proceed with registration
-        const newUser = { username: username, email: email, password: password };
+        const hashedPassword = await simpleHash(password);
+        const newUser = { username: username, email: email, password: hashedPassword };
         registeredUsers.push(newUser);
         localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
@@ -743,7 +748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Login Form ---
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
-    loginForm.addEventListener('submit', function(event) {
+    loginForm.addEventListener('submit', async function(event) {
       event.preventDefault(); // Prevent submitting to login.php
       console.log('[Debug] Login form submitted.');
       clearFormErrors(this);
@@ -756,9 +761,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // --- Check if username and password are correct (simulation using localStorage) ---
       console.log(`[Debug] Attempting login for user: ${username}`);
       const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-      const user = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+      const hashedPassword = await simpleHash(password);
+      const user = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
 
-      if (user) {
+      if (user && user.password === hashedPassword) {
         console.log(`[Debug] Login successful for user: ${username}. Remember me: ${rememberMe}`);
         // If user is found and password is correct, proceed to login
         // Set session with an expiry time (e.g., 1 hour)
@@ -800,7 +806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (passwordResetForm) {
     let isStep2 = false; // State to track which step we are on
 
-    passwordResetForm.addEventListener('submit', function(event) {
+    passwordResetForm.addEventListener('submit', async function(event) {
       event.preventDefault();
       const messageDiv = document.getElementById('password-reset-message');
       const email = this.elements.email.value;
@@ -849,7 +855,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         console.log(`[Debug] Password reset successful for email: ${email}.`);
-        user.password = newPassword;
+        const hashedPassword = await simpleHash(newPassword);
+        user.password = hashedPassword;
         delete user.resetCode;
         delete user.resetCodeExpiry;
         localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));

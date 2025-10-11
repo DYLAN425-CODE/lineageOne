@@ -57,9 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userCharacterCount >= maxSlots) {
             showInfoModal('Character Slots Full', 'You have reached the maximum number of characters. Please delete one from the dashboard to create a new one.', {
                 onOk: () => {
-                    // Close the form and redirect to the dashboard
+                    // Close the create form and open the dashboard
                     toggleForm('characterCreationForm');
-                    window.location.href = 'dashboard.html';
+                    toggleForm('dashboard');
                 }
             });
             return;
@@ -147,7 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showInfoModal('Character Created!', 'Your new hero is ready for adventure. You will now be redirected to the dashboard.', {
                 title: 'Character Created!',
                 message: 'Your new hero is ready for adventure. You will now be redirected to the dashboard.',
-                onOk: () => window.location.href = 'dashboard.html'
+                onOk: () => {
+                    // Close the create form and open the dashboard
+                    toggleForm('characterCreationForm');
+                    toggleForm('dashboard');
+                }
             });
         });
     }

@@ -844,3 +844,276 @@ html {
 #notification-modal.open {
     opacity: 1;
 }
+
+/* ======================================================================== */
+/* =================== CONSOLIDATED STYLES FROM INDEX.HTML ================ */
+/* ======================================================================== */
+
+/* Custom Styles for Password Strength Meter */
+#password-strength-meter {
+  display: flex;
+  height: 5px;
+  gap: 3px;
+  margin-top: 8px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+#password-strength-meter .strength-bar {
+  flex-grow: 1;
+  background-color: #374151; /* gray-700 */
+  transition: background-color 0.3s ease-in-out;
+}
+.password-req {
+  transition: color 0.3s ease-in-out;
+  color: #9ca3af; /* gray-400 */
+}
+.password-req.met {
+  color: #4ade80; /* green-400 */
+  text-decoration: line-through;
+}
+.password-req.met::before {
+  content: '✔ ';
+}
+
+/* Marketplace-specific styles from marketplace.html */
+.market-panel {
+    background-color: rgba(10, 10, 20, 0.85);
+    border: none; /* Removed border for a cleaner glass look */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    min-height: 60vh;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.market-item {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #6b7280;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.market-search-input {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px; /* Pill shape */
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 2px solid #4a3a2a;
+    color: #e5e7eb;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.market-search-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); /* Add a glow effect to the input field */
+}
+
+/* Character Creation-specific styles from create-character.html */
+.gender-select-container {
+  display: flex;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #4a3a2a;
+}
+.gender-select-container input[type="radio"] {
+  display: none; /* Hide the actual radio button */
+}
+.gender-select-label {
+  flex-grow: 1;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.4);
+  transition: background-color 0.2s, color 0.2s;
+}
+.gender-select-label:hover {
+  background-color: rgba(245, 158, 11, 0.3);
+}
+.gender-select-container input[type="radio"]:checked + .gender-select-label {
+  background-color: #f59e0b;
+  color: #1a1a1a;
+  text-shadow: none;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+.class-card {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 2px solid #4a3a2a;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Dashboard-specific styles from dashboard.html */
+.stat-item {
+    border-bottom: 1px solid #3a2d20;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.stat-item:last-child {
+    border-bottom: none;
+}
+.equip-slot {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid #4a3a2a;
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.storage-item {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #6b7280;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.character-slot {
+    background-color: rgba(10, 10, 20, 0.75);
+    border: none; /* Removed border for a cleaner glass look */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    min-height: 200px;
+    position: relative; /* Required for the ::before pseudo-element */
+    overflow: hidden;   /* Clips the flowing effect */
+}
+.character-slot::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 75%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-25deg);
+    animation: flow-shine 5s infinite linear;
+}
+
+/* Remove border specifically from the logout modal for a cleaner glass look */
+#logout-modal-content {
+    border: none;
+}
+
+/* Item Viewer-specific styles from item-viewer.html */
+.item-card {
+    background-color: rgba(10, 10, 20, 0.6);
+    border: 1px solid #3a2d20;
+    /* backdrop-filter: blur(3px); */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 15px rgba(252, 207, 63, 0.3);
+}
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+.stat-item {
+    background-color: rgba(0,0,0,0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* ======================================================================== */
+/* ========================= CUSTOM TABLE STYLES ======================== */
+/* ======================================================================== */
+
+/* Table Header */
+#accounts-table thead,
+#droplist-table thead {
+  border-bottom: 2px solid #4a3a2a; /* Muted gold border */
+  color: #fccf3f; /* Bright gold color for header text */
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Table Rows */
+.table-row-custom {
+  border-bottom: 1px solid rgba(74, 58, 42, 0.5); /* Fainter line for rows */
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.table-row-custom:last-child {
+  border-bottom: none; /* Remove border from the last row */
+}
+
+.table-row-custom:hover {
+  background-color: rgba(252, 207, 63, 0.1); /* Subtle gold glow on hover */
+  transform: scale(1.01); /* Slightly lift the row on hover */
+}
+
+/* ======================================================================== */
+/* ======================= ACCOUNT STATUS BADGES ======================== */
+/* ======================================================================== */
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px; /* pill shape */
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    color: #111827; /* dark text */
+}
+
+.status-badge-active {
+    background-color: #24f7ec;
+    box-shadow: 0 0 8px rgba(36, 247, 236, 0.7);
+}
+.status-badge-banned {
+    background-color: #f50b0b;
+    box-shadow: 0 0 8px rgba(245, 11, 11, 0.7);
+}
+.status-badge-suspended {
+    background-color: #fccf3f;
+    box-shadow: 0 0 8px rgba(252, 207, 63, 0.7);
+}
+
+/* Small Action Buttons for Tables */
+.action-btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 0.25rem;
+    border: 1px solid var(--neon-color);
+    color: var(--neon-color);
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.action-btn-sm:hover {
+    background-color: var(--neon-color);
+    color: #111827;
+    box-shadow: 0 0 10px var(--neon-color);
+}
+.action-btn-sm.btn-red { --neon-color: #f50b0b; }
+.action-btn-sm.btn-green { --neon-color: #24f7ec; }
+.action-btn-sm.btn-yellow { --neon-color: #fccf3f; }
+
+/* Fix for admin.html table buttons */
+#accountTable .action-btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 0.25rem;
+    border: 1px solid var(--neon-color);
+    color: var(--neon-color);
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#accountTable .action-btn-sm:hover {
+    background-color: var(--neon-color);
+    color: #111827;
+    box-shadow: 0 0 10px var(--neon-color);
+}
+#accountTable .action-btn-sm.btn-red { --neon-color: #f50b0b; }
+#accountTable .action-btn-sm.btn-green { --neon-color: #24f7ec; }
