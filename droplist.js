@@ -1,6 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const droplistSection = document.getElementById('droplist');
-    if (!droplistSection) return;
+document.addEventListener('DOMContentLoaded', async () => {
+    const pageContent = document.getElementById('page-content');
+    if (!pageContent) return;
 
     let sortState = { key: 'item', order: 'asc' }; // Initial sort state
     let fullDropList = [];      // Stores the complete, unfiltered list
@@ -234,33 +234,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const initializeDroplist = async () => {
         if (isLoaded) return; // Prevent re-initialization
 
-        const serverProps = window.serverProperties;
+        // Load server properties if they aren't already loaded by script.js
+        const serverProps = window.serverProperties || await window.loadServerProperties();
         itemsPerPage = serverProps.DROPLIST_ITEMS_PER_PAGE;
 
         await loadDropList('data/droplist.sql'); // Point to the new SQL file
         renderSortControls();
 
         const searchInput = document.getElementById('droplist-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', debounce((e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                currentList = fullDropList.filter(drop =>
-                    drop.item.toLowerCase().includes(searchTerm) ||
-                    drop.mob.toLowerCase().includes(searchTerm)
-                );
-                sortDropList(sortState.key, true);
-            }, 300));
-        }
+        searchInput?.addEventListener('input', debounce((e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            currentList = fullDropList.filter(drop => drop.item.toLowerCase().includes(searchTerm) || drop.mob.toLowerCase().includes(searchTerm));
+            sortDropList(sortState.key, true); // Re-sort and render
+        }, 300));
         console.log('[Debug] Droplist initialized.');
     };
 
-    // Use a MutationObserver to initialize the droplist only when it becomes visible.
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class' && !droplistSection.classList.contains('hidden')) {
-                initializeDroplist();
-            }
-        }
-    });
-    observer.observe(droplistSection, { attributes: true });
+    // Since this is a dedicated page, initialize directly.
+    initializeDroplist();
 });

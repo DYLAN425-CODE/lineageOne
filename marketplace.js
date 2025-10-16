@@ -2,16 +2,99 @@
  * Manages user session and active character initialization.
  * @returns {object|null} The active character object or null if session is invalid.
  */
+
+/**
+ * Fetches and parses the server.properties file.
+ * @returns {Promise<object>} A promise that resolves to an object with the server properties.
+ */
+async function loadServerProperties() {
+    console.log('[Debug] Loading server.properties...');
+    // Default values in case the file is missing or fails to load
+    const defaultProps = {
+        DOWNLOAD_ENABLED: true, DISCORD_ENABLED: true, NEWS_ENABLED: true,
+        COUNTDOWN_ENABLED: true, GALLERY_ENABLED: true, LORE_ENABLED: true,
+        DROPLIST_ENABLED: true, MARKETPLACE_ENABLED: true, SERVER_STATUS_ENABLED: true,
+        VIDEO_BACKGROUND_ENABLED: true,
+        RIGHT_CLICK_PROTECTION_ENABLED: true,
+        REMEMBER_ME_DURATION_DAYS: 30,
+        DOWNLOAD_AVAILABLE_DATE: '2027-08-10T00:00:00',
+        SERVER_STATUS_INTERVAL_SECONDS: 30,
+        MAX_CHARACTER_SLOTS: 6,
+        NEWS_FILE_PATH: 'news.json',
+        SERVER_STATUS_API_URL: '/api/server-status',
+        STARTER_INVENTORY_JSON: '[{"name":"Adena","quantity":5000,"stackable":true,"price":1},{"name":"Red Potion","quantity":30,"stackable":true,"price":30},{"name":"Haste Potion","quantity":5,"stackable":true,"price":180},{"name":"Trainee\'s T-shirt","quantity":1,"stackable":false,"droppable":false,"price":100}]',
+        SITE_TITLE: 'Lineage',
+        LOGO_IMAGE_PATH: 'images/logo-lineage.png',
+        FOOTER_TEXT: '&copy; 2025 Lineage 1 Server. All rights reserved.',
+        SOCIAL_FACEBOOK_URL: '',
+        SOCIAL_YOUTUBE_URL: '',
+        MAIN_BACKGROUND_VIDEO_PATH: 'media/lineage2.mp4',
+        FAVICON_PATH: 'icon/cs.ico',
+        SITE_FONT_URL: 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap',
+        SITE_FONT_FAMILY: "'Cinzel', serif"
+    };
+    try {
+        // Add a cache-busting query parameter to ensure the latest version is fetched.
+        const response = await fetch(`server.properties?v=${Date.now()}`);
+        if (!response.ok) {
+            console.warn('server.properties not found. Using default feature settings.');
+            return defaultProps;
+        }
+        const text = await response.text();
+        const properties = {};
+        const numericKeys = ['REMEMBER_ME_DURATION_DAYS', 'SERVER_STATUS_INTERVAL_SECONDS', 'MAX_CHARACTER_SLOTS', 'DROPLIST_ITEMS_PER_PAGE', 'RING3_LEVEL_REQUIREMENT', 'RING4_LEVEL_REQUIREMENT', 'STACKABLE_PRICE_MIN', 'STACKABLE_PRICE_MAX', 'NONSTACKABLE_PRICE_MIN', 'NONSTACKABLE_PRICE_MAX'];
+
+        text.split('\n').forEach(line => {
+            line = line.trim();
+            if (line && !line.startsWith('#')) {
+                const separatorIndex = line.indexOf('=');
+                if (separatorIndex === -1) return;
+
+                const key = line.substring(0, separatorIndex).trim();
+                let value = line.substring(separatorIndex + 1).trim();
+
+                if (key) {
+                    // 1. Handle Booleans
+                    if (value.toLowerCase() === 'true') {
+                        properties[key] = true;
+                    } else if (value.toLowerCase() === 'false') {
+                        properties[key] = false;
+                    // 2. Handle JSON strings
+                    } else if (key.endsWith('_JSON')) {
+                        try {
+                            properties[key] = JSON.parse(value);
+                        } catch (e) {
+                            console.error(`Error parsing JSON for key ${key}:`, e);
+                            properties[key] = defaultProps[key] ? JSON.parse(defaultProps[key]) : null; // Fallback
+                        }
+                    // 3. Handle specific numeric keys
+                    } else if (numericKeys.includes(key) && !isNaN(Number(value))) {
+                        properties[key] = Number(value);
+                    // 4. Handle all other cases as strings
+                    } else {
+                        properties[key] = value;
+                    }
+                }
+            }
+        });
+        console.log('[Debug] server.properties loaded successfully.');
+        return { ...defaultProps, ...properties };
+    } catch (error) {
+        console.error('Failed to load server.properties:', error);
+        return defaultProps;
+    }
+}
+
 function initializeUserSession() {
-    const session = JSON.parse(localStorage.getItem('session'));
+    const session = JSON.parse(localStorage.getItem('session')); // This function is now also used by marketplace.html
     if (!session) {
-        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => toggleForm('loginForm') });
+        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => { window.location.href = 'login.html'; } });
         return null;
     }
 
     if (Date.now() > session.expiry) {
         localStorage.removeItem('session');
-        showInfoModal('Session Expired', 'Your session has expired. Please log in again.', { onOk: () => window.location.href = 'index.html' });
+        showInfoModal('Session Expired', 'Your session has expired. Please log in again.', { onOk: () => { window.location.href = 'login.html'; } });
         return null;
     }
 
@@ -35,6 +118,10 @@ function initializeUserSession() {
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+    // Load server properties first, as they are needed for feature flags.
+    // This requires the loadServerProperties function to be available.
+    // We will load script.js in marketplace.html to make it available.
+    window.serverProperties = window.serverProperties || await loadServerProperties();
     let isMarketplaceInitialized = false; // Flag to prevent re-initialization
     let activeCharacter = null;
     let userCharacters = [];
@@ -306,7 +393,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
     
         activeCharacter.inventory = [...nonStackableItems, ...Array.from(combined.values())];
-        activeCharacter.inventory = [...nonStackableItems, ...Array.from(stackableItems.values())];
         saveCharacterState();
         renderSellPanel();
         showSuccessModal('Items Combined', 'Your stackable items have been combined.');
@@ -336,29 +422,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     //  INITIALIZATION & EVENT LISTENERS
     // ========================================================================
 
-    async function initializeMarketplace() {
-        if (isMarketplaceInitialized) return; // Don't re-initialize
-
-        // If both buying and selling are disabled, show a general unavailable message.
-        if (!BUY_ENABLED && !SELL_ENABLED) {
-            showInfoModal('Marketplace Unavailable', 'The marketplace is temporarily disabled. Please check back later.', { onOk: () => toggleForm('marketplace') });
-            // Hide the marketplace content and show a message
-            const marketplaceContent = marketplaceSection.querySelector('.text-center');
-            if (marketplaceContent) marketplaceContent.innerHTML = `<p class="text-yellow-400 text-lg">The marketplace is currently disabled.</p>`;
-            return;
-        }
+    async function initializeMarketplace() { // Renamed from DOMContentLoaded handler
+        if (isMarketplaceInitialized) return;
+        console.log('[Debug] Initializing Marketplace...');
+        // The rest of the initialization logic remains the same
 
         const sessionData = initializeUserSession();
         if (!sessionData) {
             // The initializeUserSession function already shows a modal and redirects.
-            // We might want to just close the form instead.
-            toggleForm('marketplace'); // Close the marketplace panel if user is not logged in
             return;
         }
         ({ activeCharacter, userCharacters } = sessionData);
         await loadMarketGoods();
-        
-        // Render the character selector first
         renderCharacterSelector();
 
         // Conditionally render the buy panel
@@ -395,16 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[Debug] Marketplace initialized.');
     }
 
-    // Use a MutationObserver to initialize the marketplace only when it becomes visible.
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const isHidden = marketplaceSection.classList.contains('hidden');
-                if (!isHidden) {
-                    initializeMarketplace();
-                }
-            }
-        }
-    });
-    if (marketplaceSection) observer.observe(marketplaceSection, { attributes: true });
+    // Since this is a dedicated page, we can initialize the marketplace directly on DOMContentLoaded.
+    // The MutationObserver is no longer needed.
+    initializeMarketplace();
 });

@@ -3,45 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lineage One - Drop List</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://api.ipify.org;">
-  <!-- Maintenance Mode Check - MUST be the first script -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Drop List - Lineage</title>
+
+  <!-- Maintenance Mode Check -->
   <script src="maintenance.js"></script>
 
   <!-- Favicon -->
   <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
   <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    /* The video background is now handled by the #bg-video-container in style.css */
-  </style>
-</head>
-<body
-  class="bg-gradient-to-br from-gray-900 to-black h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 flex flex-col"
->
-  <div id="bg-video-container">
-    <video src="media/droplist.mp4" autoplay muted loop playsinline preload="metadata"></video>
-  </div>
+  <!-- Google Font: Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- Main container for the droplist page -->
-  <div id="page-content" class="max-w-4xl mx-auto w-full flex flex-col flex-grow relative z-10 min-h-0 transition-all duration-300"> <!-- This is the main content wrapper -->
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
+
+  <!-- ========================================================================
+  DROP LIST
+  ======================================================================== -->
+  <main id="page-content" class="max-w-4xl mx-auto w-full flex flex-col" style="height: calc(100vh - 2rem);">
     <!-- Fixed Header Section -->
     <div class="flex-shrink-0">
       <header class="flex justify-between items-center pt-8 pb-4">
         <div class="flex-1">
-          <a href="index.html" class="inline-block bg-blue-600 px-8 py-2 rounded-lg hover:bg-blue-700 transition">Return to Main</a>
+          <a href="index.html" class="action-btn btn-gray">Return to Main</a>
         </div>
-        <h2 class="flex-1 text-3xl font-bold text-center text-yellow-400 text-shadow">
+        <h1 class="flex-1 text-3xl font-bold text-center text-yellow-400 text-shadow">
           Drop List
-        </h2>
+        </h1>
         <div class="flex-1"></div>
       </header>
 
@@ -61,10 +58,16 @@
       <div id="droplist-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <p id="droplist-loading" class="text-center col-span-full">Loading drop list...</p>
       </div>
-      <div id="pagination-controls" class="flex justify-center items-center py-4 sticky bottom-0"></div>
+      <div id="pagination-controls" class="flex justify-center items-center gap-4 py-4 sticky bottom-0 bg-black/50 backdrop-blur-sm rounded-t-lg"></div>
     </div>
-  </div>
+  </main>
 
+  <!-- ========================================================================
+  SCRIPT INCLUDES
+  ======================================================================== -->
+  <script src="script.js"></script> <!-- Needed for loadServerProperties -->
+  <script src="modal.js"></script>
   <script src="droplist.js"></script>
+
 </body>
 </html>

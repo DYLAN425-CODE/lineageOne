@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const session = JSON.parse(localStorage.getItem('session'));
         if (!session || Date.now() > session.expiry) {
-            toggleForm('dashboard'); // Close dashboard
-            toggleForm('loginForm'); // Open login
+            // Session is invalid, redirect to the login page
+            window.location.href = 'login.html';
             return;
         }
 
@@ -247,8 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === (JSON.parse(localStorage.getItem('session'))?.username.toLowerCase() || ''));
         const characterToEnter = userCharacters.find(c => c.name === charName);
         localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
-        toggleForm('dashboard');
-        toggleForm('marketplace');
+        window.location.href = 'marketplace.html';
     });
 
     // ========================================================================

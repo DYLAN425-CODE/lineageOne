@@ -1,10 +1,12 @@
+import { auth } from './firebase-config.js';
+
 /**
  * Toggles the visibility of different sections on the page.
  * @param {string} id The ID of the section to toggle.
  */
 function toggleForm(id) {
   console.log(`[Debug] toggleForm called for: #${id}`);
-  const formSections = ['loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord', 'marketplace', 'characterCreationForm', 'dashboard', 'droplist', 'itemViewer'];
+  const formSections = ['download', 'discord', 'characterCreationForm', 'dashboard'];
   if (!formSections.includes(id)) {
     return;
   }
@@ -22,12 +24,7 @@ function toggleForm(id) {
   });
 
   // Toggle the target section's visibility
-  if (id === 'droplist' || id === 'itemViewer') {
-    targetSection.classList.toggle('hidden');
-    targetSection.classList.toggle('flex'); // Droplist uses flexbox for its layout
-  } else {
-    targetSection.classList.toggle('hidden');
-  }
+  targetSection.classList.toggle('hidden');
 
   // --- Accessibility: Focus on the first input when a form is opened ---
   if (isOpening) {
@@ -44,7 +41,7 @@ function toggleForm(id) {
   const discordSection = document.getElementById('discord');
   
   // Define which sections should hide the main content (news/gallery)
-  const sectionsThatHideMainContent = ['loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord', 'droplist', 'marketplace', 'characterCreationForm', 'dashboard', 'itemViewer'];
+  const sectionsThatHideMainContent = ['download', 'discord', 'characterCreationForm', 'dashboard'];
 
   if (sectionsThatHideMainContent.includes(id) && isOpening) {
     newsSection?.classList.add('hidden');
@@ -75,7 +72,7 @@ function toggleForm(id) {
  * Fetches and parses the server.properties file.
  * @returns {Promise<object>} A promise that resolves to an object with the server properties.
  */
-async function loadServerProperties() {
+window.loadServerProperties = async function() {
     console.log('[Debug] Loading server.properties...');
     // Default values in case the file is missing or fails to load
     const defaultProps = {
@@ -161,29 +158,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.serverProperties = await loadServerProperties(); // Store globally for toggleForm
   //  SESSION-BASED UI UPDATES
   // ========================================================================
-  const session = JSON.parse(localStorage.getItem('session'));
-  const loginButton = document.getElementById('login-button');
-  const registerButton = document.getElementById('register-button');
-  const logoutButton = document.getElementById('logout-button');
-
-  if (session && Date.now() < session.expiry) {
-    // User is logged in, show dashboard and hide main content
-    logoutButton?.classList.remove('hidden');
-    toggleForm('dashboard');
-
-    // Hide the countdown timer since the user is already logged in
+  auth.onAuthStateChanged(user => {
+    const loginButton = document.getElementById('login-button');
+    const registerButton = document.getElementById('register-button');
+    const logoutButton = document.getElementById('logout-button');
     const countdownSection = document.getElementById('countdown');
-    if (countdownSection) {
-      countdownSection.classList.add('hidden');
+
+    if (user) {
+      // User is signed in.
+      console.log('[Auth] User is signed in:', user.email);
+      loginButton?.classList.add('hidden');
+      registerButton?.classList.add('hidden');
+      logoutButton?.classList.remove('hidden');
+      countdownSection?.classList.add('hidden');
+      toggleForm('dashboard');
+    } else {
+      // User is signed out.
+      console.log('[Auth] User is signed out.');
+      loginButton?.classList.remove('hidden');
+      registerButton?.classList.remove('hidden');
+      logoutButton?.classList.add('hidden');
+      // Ensure main content is visible for non-logged-in users
+      toggleForm(null);
     }
-  } else {
-    // User is not logged in or session expired
-    logoutButton?.classList.add('hidden');
-    loginButton?.classList.remove('hidden');
-    registerButton?.classList.remove('hidden');
-    // Ensure main content is visible on first load for non-logged-in users
-    toggleForm(null);
-  }
+  });
 
   // --- Feature Flag UI Updates ---
   const downloadButton = document.getElementById('download-button-header');
@@ -334,23 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ========================================================================
   //  EVENT LISTENERS FOR HEADER NAVIGATION BUTTONS
   // ========================================================================
-  document.getElementById('login-button')?.addEventListener('click', () => {
-    const currentSession = JSON.parse(localStorage.getItem('session'));
-    if (currentSession && Date.now() < currentSession.expiry) {
-      toggleForm('dashboard');
-    } else {
-      toggleForm('loginForm');
-    }
-  });
-  document.getElementById('register-button')?.addEventListener('click', () => {
-    const currentSession = JSON.parse(localStorage.getItem('session'));
-    if (currentSession && Date.now() < currentSession.expiry) {
-      // The user is already logged in.
-      showInfoModal('Already Logged In', 'You are already logged in and cannot register a new account.', { type: 'info' });
-    } else {
-      toggleForm('registerForm');
-    }
-  });
   document.getElementById('download-button-header')?.addEventListener('click', () => {
     toggleForm('download');
   });
@@ -360,50 +341,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleForm('characterCreationForm'); // This will close the form and show the main content
   });
 
-  document.getElementById('droplist-button')?.addEventListener('click', () => {
-    toggleForm('droplist');
-  });
-
-  // Handle the back button from the droplist section
-  document.getElementById('droplist-back-btn')?.addEventListener('click', () => {
-    toggleForm('droplist');
-  });
-
+  document.getElementById('droplist-button')?.addEventListener('click', () => window.location.href = 'droplist.html');
+  
   document.getElementById('item-viewer-button')?.addEventListener('click', () => {
-    toggleForm('itemViewer');
+    window.location.href = 'item-viewer.html';
   });
-
-  // Handle the back button from the item viewer section
-  document.getElementById('item-viewer-back-btn')?.addEventListener('click', () => {
-    toggleForm('itemViewer');
-  });
-
   document.getElementById('marketplace-button')?.addEventListener('click', () => {
-    toggleForm('marketplace');
+    window.location.href = 'marketplace.html';
   });
 
   document.getElementById('discord-button')?.addEventListener('click', () => {
     toggleForm('discord');
   });
-  document.getElementById('forgot-password-button')?.addEventListener('click', (event) => {
-    event.preventDefault(); // Prevent default link behavior
-    toggleForm('passwordResetFlow');
-  });
 
   document.getElementById('logout-button')?.addEventListener('click', () => {
-    // Update lastOnline for the active character before logging out
-    const activeChar = JSON.parse(localStorage.getItem('activeCharacter'));
-    if (activeChar) {
-        const allChars = JSON.parse(localStorage.getItem('characters')) || [];
-        const charIndex = allChars.findIndex(c => c.name === activeChar.name);
-        if (charIndex !== -1) {
-            allChars[charIndex].lastOnline = new Date().toISOString();
-            localStorage.setItem('characters', JSON.stringify(allChars));
-        }
-    }
-
-    localStorage.removeItem('session');
-    window.location.reload(); // Reload the page to reflect the logged-out state
+    auth.signOut().then(() => {
+      console.log('[Auth] User signed out successfully.');
+      // The onAuthStateChanged listener will handle the UI changes.
+      // We can also clear any app-specific local storage here.
+      localStorage.removeItem('activeCharacter');
+      window.location.href = 'index.html'; // Redirect to ensure a clean state
+    }).catch((error) => {
+      console.error('Sign out error:', error);
+    });
   });
 
   // --- Handle Hash Links (e.g., from dashboard.html#create) ---
@@ -442,8 +402,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let inactivePlayer = player2;
 
     function playNextVideo() {        
-      // When the first video ends, show the main content
-      if (currentPlayerIndex === 0 && mainContent) {
+      // When the first video ends, the main content is shown at the same time the second video begins.
+      if (mainContent) {
           mainContent.classList.remove('hidden');
       }
 
@@ -596,284 +556,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   //  HANDLE FORM SUBMISSION (SIMULATED BACKEND)
   // ========================================================================
 
-  // --- Registration Form ---
-  const registerFormContainer = document.getElementById('registerForm');
-  const registrationForm = document.getElementById('registration-form');
-
-  if (registrationForm && registerFormContainer) {
-    registrationForm.addEventListener('submit', async function(event) {
-      event.preventDefault(); // Prevent the form from submitting to register.php
-      console.log('[Debug] Registration form submitted.');
-      clearFormErrors(this);
-
-      const username = this.elements.username.value;
-      const email = this.elements.email.value;
-      const password = this.elements.password.value;
-      const confirmPassword = this.elements.confirm_password.value;
-      const usernameInput = this.elements.username;
-      const emailInput = this.elements.email;
-      const confirmPasswordInput = this.elements.confirm_password;
-
-      // --- Validation ---
-      console.log(`[Debug] Checking for existing user: ${username} or email: ${email}`);
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-      const userExists = registeredUsers.some(user => user.username.toLowerCase() === username.toLowerCase());
-      // Check if email exists, ensuring user.email is not undefined
-      const emailExists = registeredUsers.some(user => user.email && user.email.toLowerCase() === email.toLowerCase());
-
-      if (userExists) {
-        console.warn(`[Debug] Registration failed: Username '${username}' already exists.`);
-        // If user exists, show an error message
-        showFieldError(usernameInput, 'Username already exists. Please try another.');
-        usernameInput.focus();
-      } else if (emailExists) {
-        console.warn(`[Debug] Registration failed: Email '${email}' already exists.`);
-        showFieldError(emailInput, 'Email is already registered. Please use another.');
-        emailInput.focus();
-      } else if (password !== confirmPassword) {
-        console.warn(`[Debug] Registration failed: Passwords do not match.`);
-        showFieldError(confirmPasswordInput, 'Passwords do not match.');
-        confirmPasswordInput.focus();
-      } else {
-        console.log(`[Debug] Registration successful for user: ${username}`);
-        // If user does not exist, proceed with registration
-        const hashedPassword = await simpleHash(password);
-        const newUser = { username: username, email: email, password: hashedPassword };
-        registeredUsers.push(newUser);
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-        // Hide the registration form
-        registerFormContainer.classList.add('hidden');
-
-        // Show the login form and display the success message
-        const loginForm = document.getElementById('loginForm');
-        const loginMessage = document.getElementById('login-message');
-        if (loginForm && loginMessage) {
-          loginMessage.innerHTML = `<p class="font-bold text-green-400">✅ Registration Successful! Please log in.</p>`;
-          loginForm.classList.remove('hidden');
-          loginForm.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    });
-  }
-
-  // --- Password Strength Meter ---
-  const passwordInput = document.getElementById('register-password');
-  if (passwordInput) {
-    const strengthMeter = document.getElementById('password-strength-meter');
-    const strengthBars = strengthMeter?.querySelectorAll('.strength-bar');
-    const reqs = {
-      length: document.getElementById('req-length'),
-      uppercase: document.getElementById('req-uppercase'),
-      number: document.getElementById('req-number'),
-      special: document.getElementById('req-special'),
-    };
-
-    passwordInput.addEventListener('input', () => {
-      const pass = passwordInput.value;
-      let score = 0;
-
-      // Rule 1: Length >= 8
-      if (pass.length >= 8) {
-        score++;
-        reqs.length?.classList.add('met');
-      } else {
-        reqs.length?.classList.remove('met');
-      }
-
-      // Rule 2: Contains uppercase
-      if (/[A-Z]/.test(pass)) {
-        score++;
-        reqs.uppercase?.classList.add('met');
-      } else {
-        reqs.uppercase?.classList.remove('met');
-      }
-
-      // Rule 3: Contains number
-      if (/[0-9]/.test(pass)) {
-        score++;
-        reqs.number?.classList.add('met');
-      } else {
-        reqs.number?.classList.remove('met');
-      }
-
-      // Rule 4: Contains special character
-      if (/[!@#$%^&*]/.test(pass)) {
-        score++;
-        reqs.special?.classList.add('met');
-      } else {
-        reqs.special?.classList.remove('met');
-      }
-
-      // Update strength meter bars
-      const colors = ['#374151', '#ef4444', '#f97316', '#facc15', '#4ade80']; // gray, red, orange, yellow, green
-      strengthBars?.forEach((bar, index) => {
-        if (index < score) {
-          bar.style.backgroundColor = colors[score];
-        } else {
-          bar.style.backgroundColor = colors[0]; // Default gray
-        }
-      });
-    });
-  }
-
-  // --- Show/Hide Password Toggle ---
-  document.querySelectorAll('.password-toggle-icon').forEach(button => {
-    button.addEventListener('click', () => {
-      const formGroup = button.parentElement;
-      const passwordInput = formGroup.querySelector('input[type="password"], input[type="text"]');
-      const eyeOpen = button.querySelector('.eye-open');
-      const eyeClosed = button.querySelector('.eye-closed');
-
-      const isPressed = button.getAttribute('aria-pressed') === 'true';
-
-      if (!isPressed) {
-        // Show password
-        passwordInput.type = 'text';
-        eyeOpen.classList.add('hidden');
-        eyeClosed.classList.remove('hidden');
-        button.setAttribute('aria-label', 'Hide password');
-        button.setAttribute('aria-pressed', 'true');
-      } else {
-        // Hide password
-        passwordInput.type = 'password';
-        eyeOpen.classList.remove('hidden');
-        eyeClosed.classList.add('hidden');
-        button.setAttribute('aria-label', 'Show password');
-        button.setAttribute('aria-pressed', 'false');
-      }
-    });
-  });
-
-  // --- Login Form ---
-  const loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async function(event) {
-      event.preventDefault(); // Prevent submitting to login.php
-      console.log('[Debug] Login form submitted.');
-      clearFormErrors(this);
-
-      const username = this.elements.username.value;
-      const password = this.elements.password.value;
-      const usernameInput = this.elements.username;
-      const rememberMe = this.elements['remember-me'].checked;
-
-      // --- Check if username and password are correct (simulation using localStorage) ---
-      console.log(`[Debug] Attempting login for user: ${username}`);
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-      const hashedPassword = await simpleHash(password);
-      const user = registeredUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-
-      if (user && user.password === hashedPassword) {
-        console.log(`[Debug] Login successful for user: ${username}. Remember me: ${rememberMe}`);
-        // If user is found and password is correct, proceed to login
-        // Set session with an expiry time (e.g., 1 hour)
-        const rememberMeDays = window.serverProperties.REMEMBER_ME_DURATION_DAYS || 30;
-        const shortSession = 60 * 60 * 1000; // 1 hour in milliseconds
-        const longSession = rememberMeDays * 24 * 60 * 60 * 1000;
-        const sessionDuration = rememberMe ? longSession : shortSession;
-        const expiryTime = Date.now() + sessionDuration; 
-        const session = {
-            username: username,
-            expiry: expiryTime
-        };
-        localStorage.setItem('session', JSON.stringify(session));
-        // Instead of redirecting, hide the login form and show the dashboard
-        toggleForm('loginForm'); // Close login
-        toggleForm('dashboard'); // Open dashboard
-
-        // --- Manually update UI elements that don't auto-refresh ---
-        // Hide the countdown timer
-        const countdownSection = document.getElementById('countdown');
-        if (countdownSection) {
-          countdownSection.classList.add('hidden');
-        }
-        // Update header buttons
-        document.getElementById('login-button')?.classList.add('hidden');
-        document.getElementById('register-button')?.classList.add('hidden');
-        document.getElementById('logout-button')?.classList.remove('hidden');
-      } else {
-        console.warn(`[Debug] Login failed: Invalid credentials for user: ${username}`);
-        // If user not found or password incorrect, show error
-        showFieldError(usernameInput, 'Invalid username or password.');
-        usernameInput.focus();
-      }
-    });
-  }
-
-  // --- Password Reset Flow (Combined Form) ---
-  const passwordResetForm = document.getElementById('password-reset-form');
-  if (passwordResetForm) {
-    let isStep2 = false; // State to track which step we are on
-
-    passwordResetForm.addEventListener('submit', async function(event) {
-      event.preventDefault();
-      const messageDiv = document.getElementById('password-reset-message');
-      const email = this.elements.email.value;
-
-      if (!isStep2) {
-        // --- LOGIC FOR STEP 1: SEND CODE ---
-        console.log('[Debug] Password Reset Step 1: Sending code.');
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        const user = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-
-        if (user) {
-          console.log(`[Debug] Account found for email: ${email}. Simulating password reset code.`);
-          const resetCode = '123456'; // Static code for simulation
-          user.resetCode = resetCode;
-          user.resetCodeExpiry = Date.now() + (15 * 60 * 1000); // 15-minute expiry
-          localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-          messageDiv.innerHTML = `<div class="bg-gray-800 p-4 rounded-lg"><p class="text-green-400">✅ A password reset code has been sent to your email.</p><p class="text-xs text-gray-400 mt-2">(Simulation code: <strong class="text-yellow-300">${resetCode}</strong>)</p></div>`;
-
-          // Transition to Step 2
-          document.getElementById('reset-step-1').classList.add('hidden');
-          document.getElementById('reset-step-2').classList.remove('hidden');
-          this.elements.email.readOnly = true; // Make email field read-only
-          isStep2 = true;
-        } else {
-          console.warn(`[Debug] No account found for email: ${email}.`);
-          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ No account found with that email address.</p>`;
-        }
-      } else {
-        // --- LOGIC FOR STEP 2: VERIFY CODE AND RESET PASSWORD ---
-        console.log('[Debug] Password Reset Step 2: Verifying code.');
-        const code = this.elements.code.value;
-        const newPassword = this.elements.new_password.value;
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        const user = registeredUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-
-        if (!user || user.resetCode !== code) {
-          console.warn(`[Debug] Password reset failed: Invalid code.`);
-          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Invalid reset code.</p>`;
-          return;
-        }
-        if (Date.now() > user.resetCodeExpiry) {
-          console.warn(`[Debug] Password reset failed: Code expired.`);
-          messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Reset code has expired. Please request a new one.</p>`;
-          return;
-        }
-
-        console.log(`[Debug] Password reset successful for email: ${email}.`);
-        const hashedPassword = await simpleHash(newPassword);
-        user.password = hashedPassword;
-        delete user.resetCode;
-        delete user.resetCodeExpiry;
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-        // Hide the reset flow and show the login form with a success message
-        document.getElementById('passwordResetFlow').classList.add('hidden');
-        const loginForm = document.getElementById('loginForm');
-        const loginMessage = document.getElementById('login-message');
-        if (loginForm && loginMessage) {
-          loginMessage.innerHTML = `<p class="font-bold text-green-400">✅ Password has been reset successfully! Please log in.</p>`;
-          loginForm.classList.remove('hidden');
-          loginForm.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    });
-  }
-
   // --- Download Button Animation ---
   const downloadBtn = document.getElementById('download-btn');
   if (downloadBtn) {
@@ -891,8 +573,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const originalText = buttonTextSpan.textContent; // Save original text
 
       let progress = 0;
-      const duration = 10000; // 10 seconds for the simulation
-      const intervalTime = 30; // Update every 30ms
+      const duration = 2000; // 2 seconds for the simulation
+      const intervalTime = 20; // Update every 20ms for a smoother animation
 
       const progressInterval = setInterval(() => {
         progress += intervalTime;
@@ -906,10 +588,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentPercentage >= 100) {
           clearInterval(progressInterval);
 
-          showNotification(
+          // Use the more descriptive info modal with a warning icon
+          showInfoModal(
             'Download Not Available', 
             'The game client is not yet ready for download. Please check back on the official launch date.',
-            { onOk: () => toggleForm('download') }
+            { 
+              type: 'warning',
+              onOk: () => toggleForm('download') 
+            }
           );
 
           // Clean up and reset the button after a short delay
@@ -923,6 +609,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, intervalTime);
     });
   }
+
+  // --- Show/Hide Password Toggle (Moved here to be globally available) ---
+  document.querySelectorAll('.password-toggle-icon').forEach(button => {
+    button.addEventListener('click', () => {
+        const formGroup = button.parentElement;
+        const passwordInput = formGroup.querySelector('input[type="password"], input[type="text"]');
+        const eyeOpen = button.querySelector('.eye-open');
+        const eyeClosed = button.querySelector('.eye-closed');
+
+        if (!passwordInput || !eyeOpen || !eyeClosed) return;
+
+        const isPressed = button.getAttribute('aria-pressed') === 'true';
+
+        if (!isPressed) {
+            // Show password
+            passwordInput.type = 'text';
+            eyeOpen.classList.add('hidden');
+            eyeClosed.classList.remove('hidden');
+            button.setAttribute('aria-label', 'Hide password');
+            button.setAttribute('aria-pressed', 'true');
+        } else {
+            // Hide password
+            passwordInput.type = 'password';
+            eyeOpen.classList.remove('hidden');
+            eyeClosed.classList.add('hidden');
+            button.setAttribute('aria-label', 'Show password');
+            button.setAttribute('aria-pressed', 'false');
+        }
+    });
+  });
+
 
   // ========================================================================
   //  IMAGE GALLERY LIGHTBOX

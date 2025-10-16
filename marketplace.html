@@ -1,159 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://api.ipify.org;">
-    <title>Lineage One - Marketplace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Maintenance Mode Check - MUST be the first script -->
-    <script src="maintenance.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Marketplace - Lineage</title>
 
-    <!-- Favicon -->
-    <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
-    <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="icon/cs.ico" />
+  <link rel="shortcut icon" href="icon/cs.ico" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        html {
-            overflow-y: scroll; /* Force scrollbar to prevent layout shift */
-        }
-        body {
-            background-color: #000;
-            font-family: 'Cinzel', serif;
-        }
-        .text-shadow { text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.9); }
-        .market-item {
-            background-color: rgba(0, 0, 0, 0.2);
-            border-left: 3px solid #6b7280;
-            padding: 0.5rem 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .market-search-input {
-            width: 100%;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px; /* Pill shape */
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 2px solid #4a3a2a;
-            color: #e5e7eb;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        .market-search-input:focus {
-            outline: none;
-            border-color: #f59e0b;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); /* Add a glow effect to the input field */
-        }
-        /* Hide arrows from number input */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield; /* For Firefox */
-            appearance: none;
-        }
-    </style>
+  <!-- Google Font: Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="text-gray-200 min-h-screen">
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
 
-    <!-- Video Background Container -->
-    <div id="bg-video-container" class="fixed inset-0 w-full h-full z-[-1]">
-        <video src="media/market.mp4" autoplay muted loop playsinline preload="metadata"></video>
-    </div>
+  <div class="max-w-7xl mx-auto">
+    <!-- ========================================================================
+    HEADER
+    ======================================================================== -->
+    <header class="flex justify-between items-center pt-8 pb-4">
+      <div class="flex-1">
+        <a href="index.html" class="action-btn btn-gray">Return to Main</a>
+      </div>
+      <h1 class="flex-1 text-4xl font-bold text-center text-yellow-400 text-shadow tracking-wider">
+        Marketplace
+      </h1>
+      <div class="flex-1"></div>
+    </header>
 
-    <!-- Main content wrapper that handles centering -->
-    <div class="flex flex-col items-center justify-center min-h-screen p-4 relative z-10">
-        <div id="page-content" class="text-center w-full max-w-7xl transition-all duration-300">
-            <h1 class="text-4xl font-bold text-yellow-400 mb-2 tracking-wider text-shadow">Marketplace</h1>
+    <!-- ========================================================================
+    MARKETPLACE
+    ======================================================================== -->
+    <section id="marketplace" class="max-w-7xl mx-auto py-10">
+        <div class="text-center w-full">
             <p class="text-gray-400 mb-6 text-shadow">Buy and sell goods from the world of Aden.</p>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
                 <!-- Buy Panel -->
                 <div>
-                <h2 class="text-2xl font-semibold mb-4 text-center text-green-400 text-shadow">Buy Items</h2>
-                <div class="mb-4">
-                    <input type="text" id="market-search" placeholder="Search for an item..." class="market-search-input">
-                </div>
-                <div id="buy-panel" class="market-panel p-4 rounded-lg">
-                    <!-- Items to buy will be rendered here -->
-                </div>
+                    <h2 class="text-2xl font-semibold mb-4 text-center text-green-400 text-shadow">Buy Items</h2>
+                    <div class="mb-4">
+                        <input type="text" id="market-search" placeholder="Search for an item..." class="market-search-input">
+                    </div>
+                    <div id="buy-panel" class="market-panel p-4 rounded-lg">
+                        <!-- Items to buy will be rendered here -->
+                        <p class="text-center text-gray-400">Loading items...</p>
+                    </div>
                 </div>
 
                 <!-- Sell Panel -->
                 <div>
-                <div class="flex justify-center items-center gap-4 mb-4">
-                    <h2 class="text-2xl font-semibold text-red-400 text-shadow">Sell Items</h2>
-                    <select id="character-select-dropdown" class="bg-gray-800 border border-gray-600 rounded-md px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <!-- Options will be populated by JS -->
-                    </select>
-                    <button id="combine-sell-items-btn" class="bg-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-500 transition" title="Combine all stackable items">Combine</button>
+                    <div class="flex justify-center items-center gap-4 mb-4">
+                        <h2 class="text-2xl font-semibold text-red-400 text-shadow">Sell Items</h2>
+                        <select id="character-select-dropdown" class="bg-gray-800 border border-gray-600 rounded-md px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                        <button id="combine-sell-items-btn" class="bg-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-500 transition" title="Combine all stackable items">Combine</button>
+                    </div>
+                    <div id="sell-panel" class="market-panel p-4 rounded-lg">
+                        <!-- Character's inventory for selling will be rendered here -->
+                        <p class="text-center text-gray-400">Please log in and select a character.</p>
+                    </div>
                 </div>
-                <div id="sell-panel" class="market-panel p-4 rounded-lg">
-                    <!-- Character's inventory for selling will be rendered here -->
-                </div>
-                </div>
-            </div>
-
-            <a href="dashboard.html" class="inline-block mt-8 bg-blue-600 px-8 py-2 rounded-lg hover:bg-blue-700 transition">Return to Dashboard</a>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-    GENERIC CONFIRMATION MODAL (for Selling, etc.)
-    ======================================================================== -->
-    <div id="confirm-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="confirm-modal-content" class="market-panel p-8 rounded-lg text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
-            <h2 id="confirm-modal-title" class="text-2xl font-bold text-yellow-400 mb-4 text-shadow">Confirm Action</h2>
-            <p id="confirm-modal-message" class="text-gray-300 mb-6">Are you sure?</p>
-            <div class="flex justify-center gap-4">
-                <button id="confirm-modal-confirm-btn" class="bg-red-700 px-8 py-2 rounded-lg hover:bg-red-800 transition">Confirm</button>
-                <button id="confirm-modal-cancel-btn" class="bg-gray-600 px-8 py-2 rounded-lg hover:bg-gray-700 transition">Cancel</button>
             </div>
         </div>
-    </div>
+    </section>
+  </div>
 
-    <!-- ========================================================================
-    GENERIC NOTIFICATION MODAL (for Buy/Sell Success/Error)
-    ======================================================================== -->
-    <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="info-modal-content" class="market-panel p-8 rounded-lg text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
-            <h2 id="info-modal-title" class="relative z-10 text-2xl font-bold mb-4 text-shadow">Notification</h2>
-            <p id="info-modal-message" class="relative z-10 text-gray-300 mb-6">Message here.</p>
-            <div class="flex justify-center gap-4">
-                <button id="info-modal-ok-btn" class="bg-blue-600 px-8 py-2 rounded-lg hover:bg-blue-700 transition">OK</button>
-                <button id="info-modal-cancel-btn" class="bg-gray-600 px-8 py-2 rounded-lg hover:bg-gray-700 transition hidden">Cancel</button>
-            </div>
-        </div>
-    </div>
+  <!-- ========================================================================
+  MARKETPLACE MODALS
+  ======================================================================== -->
+  <!-- QUANTITY INPUT MODAL (for Buy/Sell) -->
+  <div id="quantity-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="quantity-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="quantity-modal-title" class="text-2xl font-bold mb-4 text-shadow">Enter Quantity</h2>
+          <p id="quantity-modal-item-name" class="text-lg text-yellow-300 mb-2">Item Name</p>
+          <p id="quantity-modal-message" class="text-gray-400 mb-4 text-sm">How many would you like to buy/sell?</p>
+          <input type="number" id="quantity-input" min="1" class="w-full bg-gray-900/50 border border-gray-600 rounded-md p-2 text-center text-2xl text-white mb-4" value="1">
+          <div class="text-lg mb-6">
+              <span>Total: </span><span id="quantity-total-price" class="font-bold text-yellow-400">0 Adena</span>
+          </div>
+          <div class="flex justify-center gap-4">
+              <button id="quantity-confirm-btn" class="action-btn btn-green">Confirm</button>
+              <button id="quantity-cancel-btn" class="action-btn btn-red">Cancel</button>
+          </div>
+      </div>
+  </div>
 
-    <!-- ========================================================================
-    QUANTITY INPUT MODAL (for Buy/Sell)
-    ======================================================================== -->
-    <div id="quantity-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="quantity-modal-content" class="market-panel p-8 rounded-lg text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
-            <h2 id="quantity-modal-title" class="text-2xl font-bold mb-4 text-shadow">Enter Quantity</h2>
-            <p id="quantity-modal-item-name" class="text-lg text-yellow-300 mb-2">Item Name</p>
-            <p id="quantity-modal-message" class="text-gray-400 mb-4 text-sm">How many would you like to buy/sell?</p>
-            
-            <input type="number" id="quantity-input" min="1" class="w-full bg-gray-900/50 border border-gray-600 rounded-md p-2 text-center text-2xl text-white mb-4" value="1">
-            
-            <div class="text-lg mb-6">
-                <span>Total: </span><span id="quantity-total-price" class="font-bold text-yellow-400">0 Adena</span>
-            </div>
+  <!-- GENERIC CONFIRMATION MODAL (for Deletion, etc.) -->
+  <div id="confirm-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="confirm-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="confirm-modal-title" class="text-2xl font-bold text-yellow-400 mb-4 text-shadow">Confirm Action</h2>
+          <p id="confirm-modal-message" class="text-gray-300 mb-6">Are you sure?</p>
+          <div class="flex justify-center gap-4">
+              <button id="confirm-modal-confirm-btn" class="action-btn btn-red">Confirm</button>
+              <button id="confirm-modal-cancel-btn" class="action-btn btn-gray">Cancel</button>
+          </div>
+      </div>
+  </div>
 
-            <div class="flex justify-center gap-4">
-                <button id="quantity-confirm-btn" class="bg-green-700 px-8 py-2 rounded-lg hover:bg-green-800 transition">Confirm</button>
-                <button id="quantity-cancel-btn" class="bg-gray-600 px-8 py-2 rounded-lg hover:bg-gray-700 transition">Cancel</button>
-            </div>
-        </div>
-    </div>
+  <!-- GENERIC INFO/NOTIFICATION MODAL -->
+  <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="info-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="info-modal-title" class="text-2xl font-bold mb-4 text-shadow">Notification</h2>
+          <p id="info-modal-message" class="text-gray-300 mb-6">This is a notification message.</p>
+          <div class="flex justify-center gap-4">
+              <!-- The 'confirm' button here acts as an 'OK' button -->
+              <button id="info-modal-confirm-btn" class="action-btn btn-blue">OK</button>
+              <button id="info-modal-cancel-btn" class="action-btn btn-gray hidden">Cancel</button>
+          </div>
+      </div>
+  </div>
 
-    <script src="modal.js"></script>
-    <script src="marketplace.js"></script>
+  <!-- DEDICATED NOTIFICATION MODAL -->
+  <div id="notification-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="notification-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="notification-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
+          <p id="notification-modal-message" class="text-gray-300 mb-6">This is a notification.</p>
+          <div class="flex justify-center gap-4">
+              <button id="notification-modal-ok-btn" class="action-btn btn-blue">OK</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- External JS -->
+  <script src="maintenance.js"></script>
+  <script type="module" src="modal.js"></script>
+  <script type="module" src="marketplace.js"></script>
+
 </body>
 </html>

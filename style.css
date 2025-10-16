@@ -6,6 +6,7 @@ body {
   -webkit-user-select: none; /* Safari */
   -moz-user-select: none;    /* Firefox */
   -ms-user-select: none;     /* IE/Edge */
+  margin: 0px;
 }
 
 /* Re-enable text selection for input fields so users can still interact with forms */
@@ -399,6 +400,7 @@ html {
 /* Specific glow for section buttons, not header buttons */
 #download-btn,
 #discord .action-btn {
+  color: var(--neon-color);
   border-color: var(--neon-color);
   background-color: rgba(var(--neon-rgb), 0.1);
   box-shadow: 0 0 10px var(--neon-color), inset 0 0 8px rgba(var(--neon-rgb), 0.4);
@@ -823,6 +825,22 @@ html {
 /* ======================================================================== */
 /* ========================= MODAL BASE STYLES ========================== */
 /* ======================================================================== */
+
+.modal-overlay-pattern {
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
 
 /* Generic Modal open state */
 .modal.open {

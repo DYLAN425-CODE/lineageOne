@@ -1,12 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const itemViewerSection = document.getElementById('itemViewer');
-    if (!itemViewerSection) return;
+document.addEventListener('DOMContentLoaded', async () => {
+    const pageContent = document.getElementById('page-content');
+    if (!pageContent) return;
 
     const itemContainer = document.getElementById('item-viewer-container');
     const loadingText = document.getElementById('item-viewer-loading');
     const searchInput = document.getElementById('item-search');
-    let allItems = [];
-    let isLoaded = false;
+    let allItems = []; // This will hold all the item data once loaded.
+    let isLoaded = false; // Flag to prevent re-loading data.
 
     /**
      * A robust parser for SQL INSERT values using a regular expression.
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Creates a debounced function that delays invoking func.
      */
     const debounce = (func, wait) => {
-        let timeout;
+        let timeout; 
         return function executedFunction(...args) {
             const later = () => {
                 clearTimeout(timeout);
@@ -199,13 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Debug] Item Viewer initialized.');
     };
 
-    // Use a MutationObserver to initialize the item viewer only when it becomes visible.
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class' && !itemViewerSection.classList.contains('hidden')) {
-                initializeItemViewer();
-            }
-        }
-    });
-    observer.observe(itemViewerSection, { attributes: true });
+    // Since this is a dedicated page, initialize directly.
+    initializeItemViewer();
 });

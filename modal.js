@@ -34,7 +34,7 @@ class Modal {
         this.modalContent = this.modal.querySelector('.character-slot, .ui-panel, .market-panel') || this.modal.firstElementChild;
         this.titleEl = this.modal.querySelector('[id$="-title"]');
         this.messageEl = this.modal.querySelector('[id$="-message"]');
-        // Find buttons ending in -confirm-btn OR -ok-btn
+        // Find buttons ending in -confirm-btn OR -ok-btn, including the notification modal's button
         this.confirmBtn = this.modal.querySelector('[id$="-confirm-btn"], [id$="-ok-btn"]');
         this.cancelBtn = this.modal.querySelector('[id$="-cancel-btn"]');
         this.confirmInputContainer = this.modal.querySelector('[id$="-input-container"]');
@@ -63,6 +63,16 @@ class Modal {
      * @param {boolean} [options.allowTitleHTML=false] - If true, allows HTML in the title.
      */
     show({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'bg-red-800/80', onConfirm, onCancel, typeToConfirm, allowTitleHTML = false }) {
+        // If the modal is already open, just shake it to give feedback.
+        if (this.modal.classList.contains('open')) {
+            console.log(`[Modal] #${this.modal.id} is already open. Shaking it.`);
+            if (this.modalContent) {
+                this.modalContent.classList.add('shake');
+                setTimeout(() => this.modalContent.classList.remove('shake'), 600);
+            }
+            return;
+        }
+
         console.log(`[Modal] Showing #${this.modal.id} with title: "${title}"`);
         this.onConfirm = onConfirm;
         this.onCancel = onCancel;
@@ -100,8 +110,7 @@ class Modal {
 
         this.modal.classList.remove('hidden');
         setTimeout(() => {
-            this.modal.classList.add('opacity-100');
-            if (this.modalContent) this.modalContent.classList.add('scale-100');
+            this.modal.classList.add('open');
         }, 10);
 
         this.confirmBtn?.addEventListener('click', this._handleConfirm);
@@ -122,8 +131,7 @@ class Modal {
             getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
         }
 
-        this.modal.classList.remove('opacity-100');
-        if (this.modalContent) this.modalContent.classList.remove('scale-100');
+        this.modal.classList.remove('open');
 
         this.confirmBtn?.removeEventListener('click', this._handleConfirm);
         this.cancelBtn?.removeEventListener('click', this._handleCancel);
@@ -168,17 +176,19 @@ let confirmModal;
 let quantityModal;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Instantiate the info modal ONLY when the DOM is fully loaded.
-    try {
-        // This assumes an element with id="info-modal" exists in the HTML.
-        infoModal = new Modal('info-modal');
-        confirmModal = new Modal('confirm-modal');
-        quantityModal = new Modal('quantity-modal');
-        // Instantiate the new notification modal
-        notificationModal = new Modal('notification-modal');
-    } catch (e) {
-        console.error("Could not initialize the main info-modal. It might be missing from the HTML.", e);
-    }
+    // Instantiate each modal in its own try-catch block.
+    // This makes the system more robust, as a page doesn't need to include all modals.
+    try { infoModal = new Modal('info-modal'); }
+    catch (e) { console.warn('Could not initialize info-modal:', e.message); }
+
+    try { confirmModal = new Modal('confirm-modal'); }
+    catch (e) { console.warn('Could not initialize confirm-modal:', e.message); }
+
+    try { quantityModal = new Modal('quantity-modal'); }
+    catch (e) { console.warn('Could not initialize quantity-modal:', e.message); }
+
+    try { notificationModal = new Modal('notification-modal'); }
+    catch (e) { console.warn('Could not initialize notification-modal:', e.message); }
 });
 
 /**
@@ -190,13 +200,17 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
  * @param {number|null} [options.autoClose=null] Milliseconds to wait before auto-closing.
  */
-function showInfoModal(title, message, { type = 'info', onOk, autoClose = null } = {}) {
+window.showInfoModal = function(title, message, { type = 'info', onOk, autoClose = null } = {}) {
     // Fallback for cases where the modal might not be in the DOM or not yet initialized
     if (!infoModal?.modal) {
         alert(`${title}\n\n${message.replace(/<br\s*\/?>/gi, '\n')}`); // Fallback
         onOk?.();
         return;
     }
+    
+    // Ensure the cancel button is hidden and the confirm button is visible
+    if (infoModal.cancelBtn) infoModal.cancelBtn.classList.add('hidden');
+    if (infoModal.confirmBtn) infoModal.confirmBtn.classList.remove('hidden');
 
     const icons = {
         success: '<span class="text-green-400">✔</span>',
@@ -204,11 +218,6 @@ function showInfoModal(title, message, { type = 'info', onOk, autoClose = null }
         info: '', // Removed the 'i' icon for a cleaner look
         warning: '<span class="text-orange-400">⚠</span>'
     };
-
-    // Hide the cancel button as this is an info-only modal
-    if (infoModal.cancelBtn) {
-        infoModal.cancelBtn.classList.add('hidden');
-    }
 
     let autoCloseTimer = null;
     const handleOk = () => {
@@ -247,7 +256,7 @@ function showInfoModal(title, message, { type = 'info', onOk, autoClose = null }
  * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
  * @param {number|null} [options.autoClose=null] Milliseconds to wait before auto-closing.
  */
-function showSuccessModal(title, message, options = {}) {
+window.showSuccessModal = function(title, message, options = {}) {
     showInfoModal(title, message, { ...options, type: 'success' });
 }
 
@@ -257,7 +266,7 @@ function showSuccessModal(title, message, options = {}) {
  * @param {string} message The message to display.
  * @param {object} [options={}] - Optional parameters.
  */
-function showWarningModal(title, message, options = {}) {
+window.showWarningModal = function(title, message, options = {}) {
     showInfoModal(title, message, { ...options, type: 'warning' });
 }
 
@@ -268,7 +277,7 @@ function showWarningModal(title, message, options = {}) {
  * @param {object} [options={}] - Optional parameters.
  * @param {Function} [options.onOk] Optional callback to run when OK is clicked.
  */
-function showNotification(title, message, { onOk } = {}) {
+window.showNotification = function(title, message, { onOk } = {}) {
     // Fallback for cases where the modal might not be in the DOM or not yet initialized
     if (!notificationModal?.modal) {
         alert(`${title}\n\n${message.replace(/<br\s*\/?>/gi, '\n')}`); // Fallback
@@ -299,7 +308,7 @@ function showNotification(title, message, { onOk } = {}) {
  * @param {Function} [options.onCancel] - Callback function when canceled.
  * @param {string} [options.typeToConfirm] - A string the user must type to enable the confirm button.
  */
-function showConfirmModal({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel, typeToConfirm }) {
+window.showConfirmModal = function({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel, typeToConfirm }) {
     if (!confirmModal?.modal) {
         if (confirm(message.replace(/<[^>]*>?/gm, ''))) { // Basic fallback
             onConfirm?.();
@@ -331,7 +340,7 @@ function showConfirmModal({ title, message, confirmText = 'Confirm', cancelText 
  * @param {Function} [options.onCancel] - Callback function when canceled.
  * @param {Function} [options.onReady] - Callback function after the modal is shown, receives the modal element.
  */
-function showQuantityModal({ title, item, maxQuantity, onConfirm, onCancel, onReady }) {
+window.showQuantityModal = function({ title, item, maxQuantity, onConfirm, onCancel, onReady }) {
     if (!quantityModal?.modal) {
         const quantity = parseInt(prompt(`Enter quantity for ${item.name}:`, "1"), 10);
         if (!isNaN(quantity) && quantity > 0) {

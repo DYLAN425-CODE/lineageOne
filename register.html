@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Register - Lineage</title>
+
+  <!-- Maintenance Mode Check -->
+  <script src="maintenance.js"></script>
+
+  <!-- Favicon -->
+  <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
+  <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
+
+  <!-- Google Font: Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
+
+  <!-- ========================================================================
+  BACKGROUND VIDEO
+  ======================================================================== -->
+  <div id="bg-video-container">
+    <video src="media/lineage.mp4" autoplay muted loop playsinline preload="metadata"></video>
+  </div>
+
+  <main id="page-content" class="max-w-7xl mx-auto w-full flex flex-col items-center justify-center min-h-screen">
+    <!-- ========================================================================
+    REGISTER FORM
+    ======================================================================== -->
+    <section id="registerForm" class="ui-panel max-w-md mx-auto py-10 fade-in" aria-labelledby="register-heading">
+      <h2 id="register-heading" class="text-2xl font-bold mb-6 text-center">Register Account</h2>
+      <div id="error-message" role="alert" class="text-center mb-4 text-red-400"></div>
+      <form id="registration-form">
+        <fieldset class="space-y-4">
+          <div class="form-group">
+            <input type="email" id="register-email" name="email" required class="form-input" placeholder=" " autocomplete="email" />
+            <label for="register-email" class="form-label">Email</label>
+          </div>
+          <div class="form-group">
+            <input type="password" id="register-password" name="password" required class="form-input" placeholder=" " autocomplete="new-password" />
+            <label for="register-password" class="form-label">Password</label>
+          </div>
+          <button type="submit" class="w-full action-btn btn-green mt-4">Register</button>
+        </fieldset>
+      </form>
+      <div class="text-center mt-6">
+        <a href="index.html" class="action-btn btn-gray">Return to Main</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+  MODALS
+  ======================================================================== -->
+  <!-- GENERIC INFO/WARNING MODAL -->
+  <div id="info-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div id="info-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+          <h2 id="info-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Notice</h2>
+          <p id="info-modal-message" class="text-gray-300 mb-6">This is an informational message.</p>
+          <div class="flex justify-center gap-4">
+              <button id="info-modal-ok-btn" class="action-btn btn-blue">OK</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- ========================================================================
+  SCRIPT INCLUDES
+  ======================================================================== -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="modal.js"></script>
+  <script type="module" src="script.js"></script> <!-- Contains shared functions -->
+  <script type="module" src="register.js"></script>
+
+</body>
+</html>
