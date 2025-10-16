@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org https://identitytoolkit.googleapis.com https://firestore.googleapis.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
   <title>Lineage</title>
 
   <!-- Maintenance Mode Check - MUST be the first script -->
@@ -24,12 +24,6 @@
   <!-- External CSS -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase SDK -->
-  <!-- Updated Firebase SDKs (v9+ with compat libraries) -->
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore-compat.js"></script>
-
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-4 md:px-8 overflow-x-hidden">
 
@@ -44,12 +38,11 @@
   MAIN CONTENT
   ======================================================================== -->
   <div id="main-content" class="max-w-7xl mx-auto hidden">
-
     <!-- ========================================================================
     HEADER
     ======================================================================== -->
     <header class="text-center py-10 fade-in">
-      <a href="index.html">
+      <a href="/">
         <img src="images/logo-lineage.png" alt="Lineage One" class="mx-auto h-auto w-full max-w-md" />
       </a>
 
@@ -60,8 +53,8 @@
       </div>
      
       <div class="mt-6 flex flex-wrap justify-center gap-4">
-        <a href="login.html" id="login-button" class="action-btn btn-blue">Login</a>
-        <a href="register.html" class="action-btn btn-green">Register</a>
+        <a href="/login" id="login-button" class="action-btn btn-blue">Login</a>
+        <a href="/register" class="action-btn btn-green">Register</a>
         <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
         <button id="droplist-button" class="action-btn btn-yellow">Drop List</button>
         <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
@@ -107,82 +100,6 @@
       <h2 class="text-2xl font-bold mb-4">💬 Join our Discord Community</h2>
       <p class="text-gray-300 mb-4">Get support, updates, and chat with fellow players.</p>
       <a href="https://discord.gg/SH8unyQRf7" target="_blank" rel="noopener noreferrer" class="action-btn btn-indigo">Join Discord</a>
-    </section>
-
-    <!-- ========================================================================
-    CHARACTER CREATION FORM
-    ======================================================================== -->
-    <section id="characterCreationForm" class="ui-panel max-w-md mx-auto py-10 fade-in hidden" aria-labelledby="char-create-heading">
-      <div id="character-creation-message" role="alert" class="text-center mb-4"></div>
-      <form id="character-creation-form">
-        <fieldset class="space-y-4">
-          <legend id="char-create-heading" class="text-2xl font-bold mb-4 text-center">Create Your Character</legend>
-        <div class="form-group">
-          <input type="text" id="charname" name="charname" placeholder=" " required class="form-input" />
-          <label for="charname" class="form-label">✨ Character Name</label>
-          <div id="charname-error" class="text-sm mt-1" aria-live="polite"></div>
-        </div>
-        
-        <!-- Gender Selection -->
-        <fieldset class="pt-2">
-          <legend class="font-bold text-lg mb-2 block text-center">Gender</legend>
-          <div class="gender-select-container">
-            <input type="radio" id="gender-male" name="gender" value="Male" checked>
-            <label for="gender-male" class="gender-select-label">Male</label>
-            <input type="radio" id="gender-female" name="gender" value="Female">
-            <label for="gender-female" class="gender-select-label">Female</label>
-          </div>
-        </fieldset>
-
-        <!-- Class Selection -->
-        <fieldset class="pt-2">
-          <legend class="font-bold text-lg mb-2 block text-center">Class</legend>
-          <div id="class-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <!-- Class cards will be generated by JS -->
-          </div>
-          <!-- Hidden select for form submission -->
-          <select name="class" id="class-select" required class="hidden">
-             <!-- Options will be generated by JS -->
-          </select>
-        </fieldset>
-
-        <div class="flex gap-4 mt-4">
-          <button type="button" id="create-char-back-btn" class="w-full action-btn btn-gray text-center">Back</button>
-          <button type="submit" class="w-full action-btn btn-green">Create Character</button>
-        </div>
-        </fieldset>
-      </form>
-    </section>
-
-    <!-- ========================================================================
-    DASHBOARD
-    ======================================================================== -->
-    <section id="dashboard" class="p-8 rounded-lg text-center max-w-6xl w-full mx-auto hidden">
-        <h1 class="text-4xl font-bold text-yellow-400 mb-2 tracking-wider text-shadow">Welcome, <span id="dashboard-username">Player</span>!</h1>
-        
-        <!-- Character Select View -->
-        <div id="character-select-view">
-            <p id="dashboard-subtitle" class="text-gray-400 mb-6 text-shadow">Select a character to begin.</p>
-            <div id="character-slots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-                <!-- Character slots will be dynamically generated here -->
-            </div>
-        </div>
-
-        <!-- Character Detail View (Initially Hidden) -->
-        <div id="character-detail-view" class="hidden">
-            <div class="flex justify-start gap-4">
-                <button id="back-to-select-btn-2" class="action-btn btn-gray">Back</button>
-                <button id="go-to-market-btn" class="action-btn btn-orange">Go to Marketplace</button>
-            </div>
-            <div id="character-display" class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 text-left">
-                <!-- Status and Equipment panels are rendered here -->
-            </div>
-            <div id="character-storage-panel" class="mt-8 text-left"></div>
-        </div>
-
-        <div class="flex justify-center items-center gap-4 mt-8 text-shadow">
-            <button id="delete-account-btn" class="text-sm text-red-500 hover:text-red-400 hover:underline">Delete Account</button>
-        </div>
     </section>
 
     <!-- ========================================================================
@@ -292,14 +209,7 @@
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="modal.js"></script>
   <script type="module" src="item-viewer.js"></script>
-  <script type="module" src="droplist.js"></script>
-  <script type="module" src="dashboard.js"></script>
-  <script type="module" src="create-character.js"></script>
-  <!-- login.js is now only on login.html -->
-  <!-- register.js is now only on register.html -->
-  <!-- marketplace.js is now only on marketplace.html -->
-  <!-- droplist-table.js is not a file in the context -->
-  <!-- debug.js is not a file in the context -->
+  <script type="module" src="droplist.js"></script>  
   <script type="module" src="script.js"></script>
 
 </body>

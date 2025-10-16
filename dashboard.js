@@ -1,28 +1,39 @@
+import { auth, db } from './firebase-config.js';
+import { onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
+import { collection, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+
 // ========================================================================
 //  DOM CONTENT LOADED - All the code inside this function runs after the page has finished loading.
 // ========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
 
     let isDashboardInitialized = false;
-    const dashboardSection = document.getElementById('dashboard');
+    let currentUser = null;
 
-    const initializeDashboard = () => {
+    const initializeDashboard = (user) => {
         if (isDashboardInitialized) {
             // If already initialized, just ensure the character select view is visible
             document.getElementById('character-select-view').classList.remove('hidden');
             document.getElementById('character-detail-view').classList.add('hidden');
-            renderCharacterSlots(); // Re-render slots in case a character was created/deleted
+            renderCharacterSlots(user); // Re-render slots in case a character was created/deleted
             return;
         }
 
-        const session = JSON.parse(localStorage.getItem('session'));
-        if (!session || Date.now() > session.expiry) {
-            // Session is invalid, redirect to the login page
-            window.location.href = 'login.html';
+        if (!user) {
+            console.log('[Dashboard] No user found, redirecting to login.');
+            window.location.href = '/login';
             return;
         }
 
-        renderCharacterSlots();
+        currentUser = user;
+
+        renderCharacterSlots(user);
+        // The `handleStorageClick` function relies on `server.properties`, so we ensure they are loaded.
+        if (!window.serverProperties) {
+            window.loadServerProperties().then(props => {
+                window.serverProperties = props;
+            });
+        }
         setupEventListeners();
         isDashboardInitialized = true;
         console.log('[Debug] Dashboard initialized.');
@@ -36,14 +47,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Date.now().toString(36) + Math.random().toString(36).substring(2);
     }
 
-    function renderCharacterSlots() {
-        const session = JSON.parse(localStorage.getItem('session'));
-        if (!session) return;
+    async function renderCharacterSlots(user) {
+        if (!user) return;
 
-        document.getElementById('dashboard-username').textContent = session.username;
+        // Use email for display, remove the domain part for a cleaner look
+        const username = user.email.split('@')[0];
+        document.getElementById('dashboard-username').textContent = username;
 
-        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-        const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
+        const q = query(collection(db, "characters"), where("owner", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const userCharacters = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const slotsContainer = document.getElementById('character-slots-container');
         const maxSlots = window.serverProperties?.MAX_CHARACTER_SLOTS || 6;
 
@@ -56,18 +69,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (userCharacters[i]) {
                 const char = userCharacters[i];
                 slotDiv.innerHTML = `
-                    <h3 class="text-2xl font-bold text-white text-shadow">${char.name}</h3>
+                    <h3 class="text-2xl font-bold text-white text-shadow">${char.charname}</h3>
                     <p class="text-gray-300 mt-1">Lv. 1 ${char.class}</p>
                     <div class="flex gap-2 mt-4">
-                        <button data-char-name="${char.name}" class="enter-game-btn action-btn btn-blue text-sm">Enter Game</button>
-                        <button data-char-name="${char.name}" class="delete-char-btn action-btn btn-red text-sm">Delete</button>
+                        <button data-char-id="${char.id}" class="enter-game-btn action-btn btn-blue text-sm">Enter Game</button>
+                        <button data-char-id="${char.id}" data-char-name="${char.charname}" class="delete-char-btn action-btn btn-red text-sm">Delete</button>
                     </div>
                 `;
             } else {
                 slotDiv.innerHTML = `
                     <h3 class="text-2xl font-bold text-gray-500">Empty Slot</h3>
                     <p class="text-gray-400 mt-1">Available</p>
-                    <button class="create-char-btn mt-4 action-btn btn-green">Create Character</button>
+                    <a href="/create-character" class="create-char-btn mt-4 action-btn btn-green">Create Character</a>
                 `;
             }
             slotsContainer.appendChild(slotDiv);
@@ -82,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectView = document.getElementById('character-select-view');
         const detailView = document.getElementById('character-detail-view');
         const displayContainer = document.getElementById('character-display');
+        displayContainer.dataset.characterId = character.id; // Store character ID for later use
 
         // --- Populate Storage ---
         const storagePanel = document.getElementById('character-storage-panel'); 
@@ -132,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div>
                 <h2 class="text-2xl font-semibold mb-4 text-center text-yellow-500 text-shadow">Character Status</h2>
                 <ul class="space-y-2 text-shadow">
-                    <li class="stat-item flex justify-between"><span>Name:</span> <span class="font-bold text-white">${character.name}</span></li>
+                    <li class="stat-item flex justify-between"><span>Name:</span> <span class="font-bold text-white">${character.charname}</span></li>
                     <li class="stat-item flex justify-between"><span>Level:</span> <span class="font-bold text-white">${characterLevel}</span></li>
                     <li class="stat-item flex justify-between"><span>Class:</span> <span class="font-bold text-white">${character.class}</span></li>
                     <li class="stat-item flex justify-between"><span>Gender:</span> <span class="font-bold text-white">${character.gender}</span></li>
@@ -188,112 +202,145 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Handles all clicks within the storage panel using event delegation.
      * @param {Event} event The click event.
      */
-    function handleStorageClick(event) {
+    async function handleStorageClick(event) {
         const button = event.target;
-        const activeCharName = document.querySelector('#character-display .stat-item span.font-bold.text-white').textContent;
-        const allChars = JSON.parse(localStorage.getItem('characters')) || [];
-        const charIndex = allChars.findIndex(c => c.name === activeCharName);
-        if (charIndex === -1) return;
-        let character = allChars[charIndex];
+        const charId = document.getElementById('character-display').dataset.characterId;
 
-        const updateAndRerender = () => {
-            allChars[charIndex] = character;
-            localStorage.setItem('characters', JSON.stringify(allChars));
-            showCharacterDetails(character);
-        };
+        // Ensure user is still logged in before any write operation
+        if (!auth.currentUser || !charId) {
+            showInfoModal('Error', 'Character or user session not found. Please try again.', { type: 'error' });
+            return;
+        }
+
+        const charDocRef = doc(db, "characters", charId);
 
         // --- Handle Split Item ---
         if (button.classList.contains('split-item-btn')) {
             const itemId = button.dataset.itemId;
-            const itemToSplit = character.inventory.find(i => i.id === itemId);
+            try {
+                const charDoc = await getDoc(charDocRef);
+                if (!charDoc.exists()) throw new Error("Character not found.");
 
-            if (!itemToSplit || itemToSplit.quantity <= 1) return;
+                let character = { id: charDoc.id, ...charDoc.data() };
+                const itemToSplit = character.inventory.find(i => i.id === itemId);
 
-            const quantityToSplit = parseInt(prompt(`How many ${itemToSplit.name} do you want to split? (Max: ${itemToSplit.quantity - 1})`), 10);
+                if (!itemToSplit || itemToSplit.quantity <= 1) return;
 
-            if (isNaN(quantityToSplit) || quantityToSplit <= 0 || quantityToSplit >= itemToSplit.quantity) {
-                alert('Invalid quantity. Please enter a number greater than 0 and less than the total stack size.');
-                return;
+                const quantityToSplit = parseInt(prompt(`How many ${itemToSplit.name} do you want to split? (Max: ${itemToSplit.quantity - 1})`), 10);
+
+                if (isNaN(quantityToSplit) || quantityToSplit <= 0 || quantityToSplit >= itemToSplit.quantity) {
+                    showInfoModal('Invalid Quantity', 'Please enter a number greater than 0 and less than the total stack size.', { type: 'error' });
+                    return;
+                }
+
+                // Reduce the original stack's quantity
+                itemToSplit.quantity -= quantityToSplit;
+
+                // Create a new item stack with the split quantity
+                const newItem = {
+                    ...itemToSplit,
+                    id: generateUUID(),
+                    quantity: quantityToSplit
+                };
+                character.inventory.push(newItem);
+
+                // Update the document in Firestore
+                await updateDoc(charDocRef, { inventory: character.inventory });
+
+                // Re-render the details view with the updated character data
+                showCharacterDetails(character);
+                showInfoModal('Success', `Successfully split ${quantityToSplit} ${itemToSplit.name}.`);
+            } catch (error) {
+                console.error("Error splitting item:", error);
+                showInfoModal('Error', `Could not split item. ${error.message}`, { type: 'error' });
             }
-
-            // Reduce the original stack's quantity
-            itemToSplit.quantity -= quantityToSplit;
-
-            // Create a new item stack with the split quantity
-            const newItem = {
-                ...itemToSplit, // Copy properties from the original item
-                id: generateUUID(), // Generate a new unique ID for the new stack
-                quantity: quantityToSplit
-            };
-
-            // Add the new stack to the inventory
-            character.inventory.push(newItem);
-
-            updateAndRerender();
         }
 
         // --- Handle Combine Stacks ---
         if (button.id === 'combine-stacks-btn') {
-            // This is a placeholder for the combine logic.
-            console.log('Combine button clicked');
+            try {
+                const charDoc = await getDoc(charDocRef);
+                if (!charDoc.exists()) throw new Error("Character not found.");
+
+                let character = { id: charDoc.id, ...charDoc.data() };
+                const inventory = character.inventory || [];
+                
+                const combinedInventory = [];
+                const stackableItems = new Map();
+
+                // Separate non-stackable and process stackable items
+                for (const item of inventory) {
+                    if (item.stackable) {
+                        const key = item.name; // Combine based on name
+                        if (stackableItems.has(key)) {
+                            stackableItems.get(key).quantity += item.quantity;
+                        } else {
+                            // Store a copy to avoid mutation issues
+                            stackableItems.set(key, { ...item });
+                        }
+                    } else {
+                        combinedInventory.push(item);
+                    }
+                }
+
+                // Add the combined stacks back to the inventory
+                combinedInventory.push(...stackableItems.values());
+
+                await updateDoc(charDocRef, { inventory: combinedInventory });
+                character.inventory = combinedInventory; // Update local character object
+                showCharacterDetails(character); // Re-render
+                showInfoModal('Success', 'All stackable items have been combined.');
+            } catch (error) {
+                console.error("Error combining stacks:", error);
+                showInfoModal('Error', `Could not combine items. ${error.message}`, { type: 'error' });
+            }
         }
 
     }
-
-    // --- Go to Market Button ---
-    document.getElementById('go-to-market-btn').addEventListener('click', () => {
-        const charName = document.querySelector('#character-display .stat-item span.font-bold.text-white').textContent;
-        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-        const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === (JSON.parse(localStorage.getItem('session'))?.username.toLowerCase() || ''));
-        const characterToEnter = userCharacters.find(c => c.name === charName);
-        localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
-        window.location.href = 'marketplace.html';
-    });
 
     // ========================================================================
     //  EVENT LISTENERS & DELEGATION
     // ========================================================================
     function setupEventListeners() {
-        const dashboardContent = document.getElementById('dashboard');
-        if (!dashboardContent) return;
+        const dashboardContent = document.getElementById('dashboard-content');
+        if (!dashboardContent) return; // Guard clause
 
-        dashboardContent.addEventListener('click', (event) => {
+        dashboardContent.addEventListener('click', async (event) => {
             const target = event.target;
-            const session = JSON.parse(localStorage.getItem('session'));
-            if (!session) return;
-
-            const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
-            const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === session.username.toLowerCase());
+            if (!currentUser) return;
 
             // --- Enter Game Button ---
             if (target.matches('.enter-game-btn')) {
-                const charName = target.dataset.charName;
-                const characterToEnter = userCharacters.find(c => c.name === charName);
-                if (characterToEnter) showCharacterDetails(characterToEnter);
+                const charId = target.dataset.charId;
+                const charDoc = await getDoc(doc(db, "characters", charId));
+                if (charDoc.exists()) {
+                    const characterData = { id: charDoc.id, ...charDoc.data() };
+                    showCharacterDetails(characterData);
+                }
                 return;
             }
 
             // --- Delete Character Button ---
             if (target.matches('.delete-char-btn')) {
                 const charName = target.dataset.charName;
+                const charId = target.dataset.charId;
                 showConfirmModal({
                     title: 'Delete Character',
                     message: `Are you sure you want to permanently delete <span class="font-bold text-white">${charName}</span>? This action cannot be undone.`,
                     typeToConfirm: charName,
-                    onConfirm: () => {
-                        let allChars = JSON.parse(localStorage.getItem('characters')) || [];
-                        const updatedCharacters = allChars.filter(c => c.name !== charName);
-                        localStorage.setItem('characters', JSON.stringify(updatedCharacters));
-                        renderCharacterSlots(); // Re-render the slots view
+                    onConfirm: async () => {
+                        await deleteDoc(doc(db, "characters", charId));
+                        showInfoModal('Success', `Character ${charName} has been deleted.`);
+                        renderCharacterSlots(currentUser); // Re-render the slots view
                     }
                 });
                 return;
             }
 
-            // --- Create Character Button ---
-            if (target.matches('.create-char-btn')) {
-                toggleForm('dashboard');
-                toggleForm('characterCreationForm');
+            // --- Logout Button ---
+            if (target.matches('#logout-btn')) {
+                event.preventDefault();
+                showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', onConfirm: () => auth.signOut() });
                 return;
             }
 
@@ -301,26 +348,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (target.matches('#back-to-select-btn-2')) {
                 document.getElementById('character-select-view').classList.remove('hidden');
                 document.getElementById('character-detail-view').classList.add('hidden');
+                renderCharacterSlots(currentUser); // Re-render to ensure data is fresh
                 return;
             }
 
             // --- Delete Account Button ---
+            // This logic needs to be updated to use Firebase Auth functions
             if (target.matches('#delete-account-btn')) {
                 showConfirmModal({
                     title: 'DELETE ACCOUNT',
                     message: 'This is a <span class="font-bold text-white">PERMANENT</span> action. You will lose your account and all characters. This cannot be undone.',
                     typeToConfirm: 'DELETE',
-                    onConfirm: () => {
-                        let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-                        registeredUsers = registeredUsers.filter(user => user.username.toLowerCase() !== session.username.toLowerCase());
-                        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+                    onConfirm: async () => {
+                        const user = auth.currentUser;
+                        if (!user) {
+                            showInfoModal('Error', 'You must be logged in to delete an account.', { type: 'error' });
+                            return;
+                        }
+                        try {
+                            // 1. Find and delete all characters owned by the user.
+                            const q = query(collection(db, "characters"), where("owner", "==", user.uid));
+                            const querySnapshot = await getDocs(q);
+                            const deletePromises = querySnapshot.docs.map(charDoc => deleteDoc(charDoc.ref));
+                            await Promise.all(deletePromises);
+                            console.log(`[Auth] Deleted ${deletePromises.length} characters for user ${user.uid}.`);
 
-                        let allChars = JSON.parse(localStorage.getItem('characters')) || [];
-                        allChars = allChars.filter(char => char.owner.toLowerCase() !== session.username.toLowerCase());
-                        localStorage.setItem('characters', JSON.stringify(allChars));
-
-                        localStorage.removeItem('session');
-                        window.location.reload();
+                            // 2. Delete the user from Firebase Authentication.
+                            await deleteUser(user);
+                            showInfoModal('Success', 'Your account has been permanently deleted.');
+                            // onAuthStateChanged will automatically redirect to the login page.
+                        } catch (error) {
+                            console.error("Error deleting account:", error);
+                            showInfoModal('Error', `Could not delete account. You may need to log out and log back in to perform this action. Error: ${error.message}`, { type: 'error' });
+                        }
                     }
                 });
                 return;
@@ -334,15 +394,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Use a MutationObserver to initialize the dashboard only when it becomes visible.
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                if (!dashboardSection.classList.contains('hidden')) {
-                    initializeDashboard();
-                }
-            }
+    // Listen for Firebase Auth state changes to initialize the dashboard
+    onAuthStateChanged(auth, (user) => {
+        const dashboardContent = document.getElementById('dashboard-content');
+        if (user) {
+            // User is signed in, initialize the dashboard
+            dashboardContent.style.opacity = 1; // Make it visible
+            initializeDashboard(user);
+        } else {
+            // No user is signed in, redirect to login.
+            window.location.href = '/';
         }
     });
-    if (dashboardSection) observer.observe(dashboardSection, { attributes: true });
 });

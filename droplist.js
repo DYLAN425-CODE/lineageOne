@@ -2,6 +2,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pageContent = document.getElementById('page-content');
     if (!pageContent) return;
 
+    /**
+     * Fetches and parses the server.properties file.
+     * This function is copied here to make this script self-contained.
+     * @returns {Promise<object>} A promise that resolves to an object with the server properties.
+     */
+    async function loadServerProperties() {
+        const defaultProps = {
+            DROPLIST_ITEMS_PER_PAGE: 300
+        };
+        try {
+            const response = await fetch(`server.properties?v=${Date.now()}`);
+            if (!response.ok) {
+                console.warn('server.properties not found in droplist.js. Using default settings.');
+                return defaultProps;
+            }
+            const text = await response.text();
+            const properties = {};
+            const numericKeys = ['DROPLIST_ITEMS_PER_PAGE'];
+
+            text.split('\n').forEach(line => {
+                line = line.trim();
+                if (line && !line.startsWith('#')) {
+                    const separatorIndex = line.indexOf('=');
+                    if (separatorIndex > -1) {
+                        const key = line.substring(0, separatorIndex).trim();
+                        let value = line.substring(separatorIndex + 1).trim();
+
+                        if (key) {
+                            if (numericKeys.includes(key) && !isNaN(Number(value))) {
+                                properties[key] = Number(value);
+                            } else {
+                                properties[key] = value;
+                            }
+                        }
+                    }
+                }
+            });
+            return { ...defaultProps, ...properties };
+        } catch (error) {
+            console.error('Failed to load server.properties in droplist.js:', error);
+            return defaultProps;
+        }
+    }
+
     let sortState = { key: 'item', order: 'asc' }; // Initial sort state
     let fullDropList = [];      // Stores the complete, unfiltered list
     let currentList = [];       // Stores the currently filtered list for pagination
@@ -234,8 +278,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initializeDroplist = async () => {
         if (isLoaded) return; // Prevent re-initialization
 
-        // Load server properties if they aren't already loaded by script.js
-        const serverProps = window.serverProperties || await window.loadServerProperties();
+        // Load server properties independently
+        const serverProps = await loadServerProperties();
         itemsPerPage = serverProps.DROPLIST_ITEMS_PER_PAGE;
 
         await loadDropList('data/droplist.sql'); // Point to the new SQL file

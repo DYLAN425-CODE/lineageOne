@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org https://identitytoolkit.googleapis.com https://firestore.googleapis.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
   <title>Login - Lineage</title>
 
   <!-- Maintenance Mode Check -->
@@ -41,11 +41,11 @@
       <form id="login-form">
         <fieldset class="space-y-4">
           <legend id="login-heading" class="text-2xl font-bold mb-4 text-center">Login</legend>
-        <div class="form-group">
-          <input type="text" id="login-username" name="username" required class="form-input" placeholder=" " aria-describedby="login-username-error" autocomplete="username" />
-          <label for="login-username" class="form-label">Username</label>
-          <div id="login-username-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
-        </div>
+          <div class="form-group">
+            <input type="email" id="login-email" name="email" required class="form-input" placeholder=" " aria-describedby="login-email-error" autocomplete="email" />
+            <label for="login-email" class="form-label">Email</label>
+            <div id="login-email-error" class="text-red-500 text-sm mt-1" aria-live="polite"></div>
+          </div>
         <div class="form-group">
           <input type="password" id="login-password" name="password" required class="form-input" placeholder=" " aria-describedby="login-password-error" autocomplete="current-password" />
           <label for="login-password" class="form-label">Password</label>
@@ -68,7 +68,7 @@
         <a href="#" id="forgot-password-button" class="text-sm text-gray-400 hover:text-yellow-400">Forgot Password?</a>
       </div>
       <div class="text-center mt-6">
-        <a href="index.html" class="action-btn btn-gray">Return to Main</a>
+        <a href="/" class="action-btn btn-gray">Return to Main</a>
       </div>
     </section>
 
@@ -123,8 +123,6 @@
   <!-- SCRIPT INCLUDES -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="modal.js"></script>
-  <script type="module" src="script.js"></script> <!-- Contains shared functions -->
-  <script type="module" src="login.js"></script>
 
 </body>
 </html>

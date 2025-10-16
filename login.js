@@ -7,7 +7,6 @@ import {
     sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
-import { showFieldError, clearFormErrors } from './script.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginFormSection = document.getElementById('loginForm');
@@ -25,44 +24,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', function(event) {
             event.preventDefault();
-            console.log('[Debug] Login form submitted.');
-            clearFormErrors(this);
 
-            const username = this.elements.username.value;
+            const email = this.elements.email.value;
             const password = this.elements.password.value;
-            const usernameInput = this.elements.username;
+            const emailInput = this.elements.email;
             const rememberMe = this.elements['remember-me'].checked;
             
-            console.log(`[Firebase] Attempting login for username: ${username}`);
+            console.log(`[Firebase] Attempting login for email: ${email}`);
 
-            // Step 1: Look up the email associated with the username in Firestore.
-            getDoc(doc(db, "usernames", username.toLowerCase()))
-                .then(docSnap => {
-                    if (!docSnap.exists()) {
-                        throw new Error("Invalid username or password.");
-                    }
-                    const email = docSnap.data().email;
-                    console.log(`[Firestore] Found email '${email}' for username '${username}'.`);
-
-                    // Step 2: Set persistence (remember me)
-                    const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
-                    return setPersistence(auth, persistence).then(() => email); // Pass email to the next step
-                })
-                .then(email => {
-                    // Step 3: Sign in with the retrieved email and provided password.
-                    return signInWithEmailAndPassword(auth, email, password);
-                })
-                .then(userCredential => {
-                    // Step 4: Success! Redirect to the main page.
-                    console.log(`[Firebase] Login successful for user: ${userCredential.user.email}`);
-                    window.location.href = 'index.html';
-                })
-                .catch(error => {
-                    // Handle any errors from the chain.
-                    console.error(`[Firebase] Login Error:`, error.message);
-                    showFieldError(usernameInput, "Invalid username or password.");
-                    usernameInput.focus();
-                });
+            // Set persistence (remember me)
+            const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+            setPersistence(auth, persistence)
+              .then(() => {
+                // Sign in with the provided email and password.
+                return signInWithEmailAndPassword(auth, email, password);
+              })
+              .then(userCredential => {
+                // Success! Redirect to the main page.
+                console.log(`[Firebase] Login successful for user: ${userCredential.user.email}`);
+                window.location.href = '/dashboard';
+              })
+              .catch(error => {
+                // Handle any errors from the chain.
+                console.error(`[Firebase] Login Error:`, error.message);
+                showInfoModal('Login Failed', 'Invalid email or password.', { type: 'error' });
+                emailInput.focus();
+              });
         });
     }
 

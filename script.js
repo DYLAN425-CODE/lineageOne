@@ -6,7 +6,7 @@ import { auth } from './firebase-config.js';
  */
 function toggleForm(id) {
   console.log(`[Debug] toggleForm called for: #${id}`);
-  const formSections = ['download', 'discord', 'characterCreationForm', 'dashboard'];
+  const formSections = ['download', 'discord'];
   if (!formSections.includes(id)) {
     return;
   }
@@ -41,7 +41,7 @@ function toggleForm(id) {
   const discordSection = document.getElementById('discord');
   
   // Define which sections should hide the main content (news/gallery)
-  const sectionsThatHideMainContent = ['download', 'discord', 'characterCreationForm', 'dashboard'];
+  const sectionsThatHideMainContent = ['download', 'discord'];
 
   if (sectionsThatHideMainContent.includes(id) && isOpening) {
     newsSection?.classList.add('hidden');
@@ -72,7 +72,7 @@ function toggleForm(id) {
  * Fetches and parses the server.properties file.
  * @returns {Promise<object>} A promise that resolves to an object with the server properties.
  */
-window.loadServerProperties = async function() {
+async function loadServerProperties() {
     console.log('[Debug] Loading server.properties...');
     // Default values in case the file is missing or fails to load
     const defaultProps = {
@@ -150,6 +150,9 @@ window.loadServerProperties = async function() {
     }
 }
 
+// Expose the function to the global window object so other scripts can call it.
+window.loadServerProperties = loadServerProperties;
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   // ========================================================================
@@ -167,11 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (user) {
       // User is signed in.
       console.log('[Auth] User is signed in:', user.email);
-      loginButton?.classList.add('hidden');
-      registerButton?.classList.add('hidden');
-      logoutButton?.classList.remove('hidden');
-      countdownSection?.classList.add('hidden');
-      toggleForm('dashboard');
+      // If on the index page, redirect to the dashboard.
+      if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+        window.location.href = '/dashboard';
+      }
     } else {
       // User is signed out.
       console.log('[Auth] User is signed out.');
@@ -179,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       registerButton?.classList.remove('hidden');
       logoutButton?.classList.add('hidden');
       // Ensure main content is visible for non-logged-in users
-      toggleForm(null);
+      if (typeof toggleForm === 'function') toggleForm(null);
     }
   });
 
@@ -336,41 +338,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleForm('download');
   });
 
-  // Handle the back button from the create character form
-  document.getElementById('create-char-back-btn')?.addEventListener('click', () => {
-    toggleForm('characterCreationForm'); // This will close the form and show the main content
-  });
-
-  document.getElementById('droplist-button')?.addEventListener('click', () => window.location.href = 'droplist.html');
+  document.getElementById('droplist-button')?.addEventListener('click', () => window.location.href = '/droplist');
   
   document.getElementById('item-viewer-button')?.addEventListener('click', () => {
-    window.location.href = 'item-viewer.html';
+    window.location.href = '/item-viewer';
   });
   document.getElementById('marketplace-button')?.addEventListener('click', () => {
-    window.location.href = 'marketplace.html';
+    window.location.href = '/marketplace';
   });
 
   document.getElementById('discord-button')?.addEventListener('click', () => {
     toggleForm('discord');
   });
-
-  document.getElementById('logout-button')?.addEventListener('click', () => {
-    auth.signOut().then(() => {
-      console.log('[Auth] User signed out successfully.');
-      // The onAuthStateChanged listener will handle the UI changes.
-      // We can also clear any app-specific local storage here.
-      localStorage.removeItem('activeCharacter');
-      window.location.href = 'index.html'; // Redirect to ensure a clean state
-    }).catch((error) => {
-      console.error('Sign out error:', error);
-    });
-  });
-
-  // --- Handle Hash Links (e.g., from dashboard.html#create) ---
-  if (window.location.hash === '#create') {
-    // Use a small timeout to ensure all scripts have loaded and properties are set
-    setTimeout(() => toggleForm('characterCreationForm'), 100);
-  }
 
   // ========================================================================
   //  SEAMLESS BACKGROUND VIDEO PLAYLIST
@@ -402,8 +381,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let inactivePlayer = player2;
 
     function playNextVideo() {        
-      // When the first video ends, the main content is shown at the same time the second video begins.
-      if (mainContent) {
+      // When the first video ends, show the main content
+      if (currentPlayerIndex === 0 && mainContent) {
           mainContent.classList.remove('hidden');
       }
 

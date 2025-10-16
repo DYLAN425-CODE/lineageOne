@@ -2,6 +2,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pageContent = document.getElementById('page-content');
     if (!pageContent) return;
 
+    /**
+     * Fetches and parses the server.properties file.
+     * This function is copied here to make this script self-contained.
+     * @returns {Promise<object>} A promise that resolves to an object with the server properties.
+     */
+    async function loadServerProperties() {
+        const defaultProps = {
+            // Add any defaults needed by item-viewer if necessary
+        };
+        try {
+            const response = await fetch(`server.properties?v=${Date.now()}`);
+            if (!response.ok) {
+                console.warn('server.properties not found in item-viewer.js. Using default settings.');
+                return defaultProps;
+            }
+            const text = await response.text();
+            const properties = {};
+            text.split('\n').forEach(line => {
+                line = line.trim();
+                if (line && !line.startsWith('#')) {
+                    const separatorIndex = line.indexOf('=');
+                    if (separatorIndex > -1) {
+                        const key = line.substring(0, separatorIndex).trim();
+                        const value = line.substring(separatorIndex + 1).trim();
+                        if (key) properties[key] = value;
+                    }
+                }
+            });
+            return { ...defaultProps, ...properties };
+        } catch (error) {
+            console.error('Failed to load server.properties in item-viewer.js:', error);
+            return defaultProps;
+        }
+    }
+
     const itemContainer = document.getElementById('item-viewer-container');
     const loadingText = document.getElementById('item-viewer-loading');
     const searchInput = document.getElementById('item-search');
