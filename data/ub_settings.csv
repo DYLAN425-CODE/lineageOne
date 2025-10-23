@@ -1,0 +1,3 @@
+"ub_id","ub_name","ub_mapid","ub_area_x1","ub_area_y1","ub_area_x2","ub_area_y2","min_lvl","max_lvl","max_player","enter_royal","enter_knight","enter_mage","enter_elf","enter_darkelf","enter_dragonknight","enter_blackwizard","enter_male","enter_female","use_pot","hpr_bonus","mpr_bonus"
+"1","ギランコロシアム","88","33494","32724","33516","32746","40","99","30","1","1","1","1","1","1","1","1","1","1","0","0"
+"2","ウェルダンコロシアム","98","32682","32878","32717","32913","30","99","30","1","1","1","1","1","1","1","1","1","1","0","0"
