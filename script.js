@@ -214,13 +214,13 @@ function setupNavigation() {
 
   // Define the navigation links
   const navLinksHTML = `
-    <a href="login.html" id="login-button" class="action-btn btn-blue">Login</a>
-    <a href="register.html" id="register-button" class="action-btn btn-green">Register</a>
+    <a href="login" id="login-button" class="action-btn btn-blue">Login</a>
+    <a href="register" id="register-button" class="action-btn btn-green">Register</a>
     <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
-    <a href="droplist.html" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
+    <a href="droplist" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
     <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
-    <a href="armor.html" id="item-viewer-button" class="action-btn btn-green">Armor</a>
-    <a href="weapon.html" id="weapon-viewer-button" class="action-btn btn-blue">Weapons</a>
+    <a href="armor" id="item-viewer-button" class="action-btn btn-green">Armor</a>
+    <a href="weapon" id="weapon-viewer-button" class="action-btn btn-blue">Weapons</a>
     <button id="download-button-header" class="action-btn btn-purple">Download</button>
     <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
   `;
@@ -261,12 +261,11 @@ function setupNavigation() {
   document.getElementById('download-button-header')?.addEventListener('click', () => { toggleForm('download'); closeMobileMenu(); });
   document.getElementById('discord-button')?.addEventListener('click', () => { toggleForm('discord'); closeMobileMenu(); });
 
-  // For links that navigate away, we don't need to close the menu, but it's good practice
-  // if we add more in-page links later.
-  document.getElementById('marketplace-button')?.addEventListener('click', () => window.location.href = 'marketplace.html');
+  // For links that navigate away
+  document.getElementById('marketplace-button')?.addEventListener('click', () => window.location.href = 'marketplace');
   document.getElementById('logout-button')?.addEventListener('click', (e) => {
       e.preventDefault();
-      showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', confirmText: 'Logout', onConfirm: () => { sessionStorage.removeItem('loggedInUser'); window.location.href = 'index.html'; } });
+      showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', confirmText: 'Logout', onConfirm: () => { sessionStorage.removeItem('loggedInUser'); window.location.href = 'index'; } });
   });
 }
 
@@ -450,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       document.getElementById('marketplace-button')?.addEventListener('click', () => {
-        window.location.href = 'marketplace.html';
+        window.location.href = 'marketplace';
       });
 
       document.getElementById('discord-button')?.addEventListener('click', () => {
@@ -465,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmText: 'Logout',
             onConfirm: () => {
                 sessionStorage.removeItem('loggedInUser');
-                window.location.href = 'index.html';
+                window.location.href = 'index';
             }
         });
       });

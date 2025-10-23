@@ -8,7 +8,7 @@ function initializeUserSession() {
     const user = window.checkSession();
 
     if (!user) {
-        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => { window.location.href = 'login.html'; } });
+        showInfoModal('Login Required', 'You need to log in to access the marketplace.', { onOk: () => { window.location.href = 'login'; } });
         return null;
     }
 

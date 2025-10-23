@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 slotDiv.innerHTML = `
                     <h3 class="text-2xl font-bold text-gray-500">Empty Slot</h3>
                     <p class="text-gray-400 mt-1">Available</p>
-                    <a href="create-character.html" class="create-char-btn mt-4 action-btn btn-green">Create Character</a>
+                    <a href="create-character" class="create-char-btn mt-4 action-btn btn-green">Create Character</a>
                 `;
             }
             slotsContainer.appendChild(slotDiv);
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // --- Local Storage Logout ---
                     sessionStorage.removeItem('loggedInUser');
                     console.log('[Auth] User logged out.');
-                    window.location.href = 'index.html';
+                    window.location.href = 'index';
                 }});
                 return;
             }
@@ -362,6 +362,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeDashboard(user);
     } else {
         console.log('[Dashboard] No user session found, redirecting to login.');
-        window.location.href = 'login.html';
+        window.location.href = 'login';
     }
 });
