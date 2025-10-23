@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org https://identitytoolkit.googleapis.com https://firestore.googleapis.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
   <title>Login - Lineage</title>
 
   <!-- Maintenance Mode Check -->
@@ -64,11 +64,11 @@
         <button class="w-full action-btn btn-blue mt-4">Login</button>
         </fieldset>
       </form>
-      <div class="text-center mt-4">
+      <div class="text-center mt-4 hidden">
         <a href="#" id="forgot-password-button" class="text-sm text-gray-400 hover:text-yellow-400">Forgot Password?</a>
       </div>
       <div class="text-center mt-6">
-        <a href="/" class="action-btn btn-gray">Return to Main</a>
+        <a href="index.html" class="action-btn btn-gray">Return to Main</a>
       </div>
     </section>
 
@@ -121,8 +121,9 @@
   </div>
 
   <!-- SCRIPT INCLUDES -->
-  <script type="module" src="firebase-config.js"></script>
   <script type="module" src="modal.js"></script>
+  <script type="module" src="script.js"></script> <!-- Added for simpleHash -->
+  <script type="module" src="login.js"></script>
 
 </body>
 </html>

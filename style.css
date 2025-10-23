@@ -83,6 +83,15 @@ html {
   text-shadow: 0 0 5px #fff, 0 0 10px #ff3333, 0 0 20px #ff3333, 0 0 40px #ff0000;
 }
 
+/* Apply the same cinematic red glow to stat labels and stat cards */
+.stat-cinematic, .bottom-stats-hscroll .stat-card h4, .expanded-stats-content .detail-row strong, .data-table td.item-primary {
+  color: #f5f5f5;
+  text-shadow: 0 0 5px #fff, 0 0 10px #ff3333, 0 0 20px #ff3333, 0 0 40px #ff0000;
+}
+
+/* Slightly adjust stat-card header color to match and ensure readability */
+.bottom-stats-hscroll .stat-card h4 { color: #f5f5f5; }
+
 /* ======================================================================== */
 /* ======================= SERVER STATUS INDICATOR ======================== */
 /* ======================================================================== */
@@ -1115,6 +1124,266 @@ html {
 .action-btn-sm.btn-green { --neon-color: #24f7ec; }
 .action-btn-sm.btn-yellow { --neon-color: #fccf3f; }
 
+/* ======================================================================== */
+/* ===================== RESPONSIVE DATA TABLE STYLES ===================== */
+/* ======================================================================== */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #4a5568; /* gray-600 */
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.data-table th {
+    background-color: rgba(31, 41, 55, 0.8); /* gray-800 with opacity */
+    color: #f59e0b; /* yellow-500 */
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+}
+
+.data-table th:hover {
+    background-color: rgba(55, 65, 81, 0.9);
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: rgba(55, 65, 81, 0.3); /* gray-700 with opacity */
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
+}
+
+/* Responsive Card Layout for Mobile */
+@media screen and (max-width: 768px) {
+    .data-table thead { display: none; }
+    .data-table tr, .data-table td {
+        display: block;
+        width: 100%;
+    }
+    .data-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid #4a5568;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    .data-table td.item-name-cell {
+        padding: 0.75rem 1rem;
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #f59e0b; /* yellow-500 */
+        background-color: rgba(55, 65, 81, 0.5);
+    }
+  /* Stack label above value and align everything to the left for better mobile readability */
+  .data-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    position: relative;
+    display: block;
+  }
+  .data-table td::before {
+    /* Show header label above the value */
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: bold;
+    color: #f59e0b; /* yellow-500 */
+  }
+
+  /* Hide stat cells on mobile - we'll show full stats in an expanded block below the row */
+  .data-table .item-stat-cell {
+    display: none !important;
+  }
+
+  /* Expanded details row styling */
+  .expanded-stats-row td {
+    background-color: rgba(15, 15, 20, 0.6);
+    padding: 0.75rem 1rem;
+  }
+
+  .expanded-stats-content {
+    display: grid;
+    grid-template-columns: 1fr; /* single column stacked list */
+    gap: 0.4rem;
+  }
+
+  .expanded-stats-content .detail-row {
+    color: #e5e7eb;
+    font-size: 0.95rem;
+    border-bottom: 1px solid rgba(74,85,104,0.12);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Ensure table wrapper prevents horizontal scrolling on small screens */
+  .overflow-x-auto {
+    overflow-x: hidden; /* Prevent horizontal scroll - content will wrap into expanded block */
+  }
+
+  /* Ensure primary stats are visible on mobile even when collapsed */
+  .data-table .item-primary {
+    display: block;
+  }
+
+  /* Small hint for mobile users that rows are expandable */
+  .data-table td.item-name-cell::after {
+    content: ' — tap to expand';
+    display: inline-block;
+    font-size: 0.85rem;
+    color: #9ca3af; /* gray-400 */
+    margin-left: 0.5rem;
+    font-weight: normal;
+  }
+}
+
+/* ======================================================================== */
+/* ========================= HAMBURGER MENU STYLES ======================== */
+/* ======================================================================== */
+
+@media (max-width: 1024px) { /* Corresponds to Tailwind's `lg` breakpoint */
+  #mobile-menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem; /* Space between buttons */
+    padding: 1.5rem 0;
+  }
+}
+
+/* Bottom fixed stats panel for laptop/desktop */
+@media (min-width: 1024px) {
+  .bottom-stats {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 260px; /* fixed height, adjust as needed */
+    background: rgba(5, 5, 10, 0.95);
+    border-top: 1px solid #333;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.6);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+  }
+  .bottom-stats.hidden { display: none; }
+  .bottom-stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .bottom-stats-title { color: #fccf3f; font-weight: 700; }
+  .bottom-stats-inner {
+    padding: 0.75rem 1rem;
+    overflow-y: auto; /* vertical scroll inside the panel */
+    -webkit-overflow-scrolling: touch;
+  }
+  .bottom-stats .detail-row { padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #e5e7eb; }
+
+  /* Horizontal scroller inside bottom panel */
+  .bottom-stats-hscroll {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 0.5rem 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .bottom-stats-hscroll .stat-card {
+    min-width: 220px;
+    background: rgba(255,255,255,0.03);
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .bottom-stats-hscroll .stat-card h4 { margin: 0 0 0.25rem 0; color: #fccf3f; font-size: 0.95rem; }
+  .bottom-stats-hscroll .stat-card p { margin: 0; color: #e5e7eb; font-size: 0.95rem; }
+
+  /* Vertical details fallback */
+  .bottom-stats-vertical { margin-top: 0.5rem; }
+
+  /* On laptop/desktop: show only item name by default; hide stat columns to create a compact list */
+  .data-table .item-stat-cell {
+    display: none !important;
+  }
+
+  /* Style the expanded details row to appear as a full-width panel under the item */
+  .expanded-stats-row td {
+    display: table-cell;
+    background-color: rgba(10,10,15,0.7);
+    padding: 0.75rem 1rem;
+  }
+  .expanded-stats-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .expanded-stats-content .detail-row { border-bottom: none; padding: 0.15rem 0; color: #e5e7eb; }
+
+  /* Ensure table wrapper does not allow horizontal scroll on these pages */
+  .overflow-x-auto { overflow-x: hidden; }
+}
+
+/* Page-scoped helper to disable horizontal scrolling and force wrapping
+   Use by adding `no-hscroll` to the page body for pages that must not scroll sideways */
+.no-hscroll {
+  overflow-x: hidden; /* prevent page-level horizontal scroll */
+}
+.no-hscroll .overflow-x-auto {
+  overflow-x: hidden !important; /* ensure table wrapper does not allow horizontal scroll */
+}
+.no-hscroll .data-table th,
+.no-hscroll .data-table td {
+  white-space: normal !important; /* allow wrapping */
+  word-break: break-word;
+}
+
+/* === Animated Hamburger Button === */
+.hamburger-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.hamburger-line {
+  width: 100%;
+  height: 3px;
+  background-color: #e5e7eb; /* gray-200 */
+  border-radius: 2px;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Animate to 'X' when the 'open' class is present */
+.hamburger-button.open .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(8px, 8px);
+}
+.hamburger-button.open .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+.hamburger-button.open .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(8px, -8px);
+}
+
+/* New focus style: a subtle background highlight */
+.hamburger-button:focus-visible {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
 /* Fix for admin.html table buttons */
 #accountTable .action-btn-sm {
     padding: 0.25rem 0.6rem;
@@ -1135,3 +1404,47 @@ html {
 }
 #accountTable .action-btn-sm.btn-red { --neon-color: #f50b0b; }
 #accountTable .action-btn-sm.btn-green { --neon-color: #24f7ec; }
+
+#mobile-menu.hidden {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  /* When the menu is visible on mobile, it should be a grid.
+     This rule was previously 'display: flex', which caused the conflict. */
+  #mobile-menu.menu-visible {
+    display: grid;
+  }
+}
+
+@media (min-width: 1024px) { /* `lg` breakpoint and up */
+  #mobile-menu {
+    display: flex !important; /* Ensure it's always visible on larger screens */
+    flex-direction: row; /* Revert to a row for desktop */
+    align-items: center;
+    gap: 0.75rem; /* Adjust gap for horizontal layout */
+  }
+}
+
+/* ======================================================================== */
+/* ========================= LOADING SPINNER ========================== */
+/* ======================================================================== */
+
+.loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #f59e0b;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -20px;
+  margin-left: -20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

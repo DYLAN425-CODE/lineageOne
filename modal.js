@@ -122,13 +122,18 @@ class Modal {
     close() {
         console.log(`[Modal] Closing #${this.modal.id}`);
 
-        // Show main page content again, but only if no other modal or form is open.
-        const anyFormOpen = [
-            'loginForm', 'registerForm', 'passwordResetFlow', 'download', 'discord'
-        ].some(id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden'));
-
-        if (!anyFormOpen) {
-            getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+        // On pages like login.html or register.html, the form IS the main content.
+        // We need to make sure the content is shown again when the modal closes.
+        const isAuthPage = document.body.querySelector('#loginForm, #registerForm');
+        
+        if (isAuthPage) {
+             getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+        } else {
+            // Original logic for index.html where forms can be toggled on/off
+            const anyFormOpen = ['download', 'discord'].some(id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden'));
+            if (!anyFormOpen) {
+                getContentElementsToHide().forEach(el => el.classList.remove('hidden'));
+            }
         }
 
         this.modal.classList.remove('open');

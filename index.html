@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org https://identitytoolkit.googleapis.com https://firestore.googleapis.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; media-src 'self' blob:; connect-src 'self' https://timeapi.io https://api.ipify.org https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';">
   <title>Lineage</title>
 
   <!-- Maintenance Mode Check - MUST be the first script -->
@@ -38,11 +38,11 @@
   MAIN CONTENT
   ======================================================================== -->
   <div id="main-content" class="max-w-7xl mx-auto hidden">
-    <!-- ========================================================================
-    HEADER
+
+    <!--HEADER
     ======================================================================== -->
     <header class="text-center py-10 fade-in">
-      <a href="/">
+      <a href="index.html">
         <img src="images/logo-lineage.png" alt="Lineage One" class="mx-auto h-auto w-full max-w-md" />
       </a>
 
@@ -51,17 +51,21 @@
         <span class="status-dot"></span>
         <span id="status-text">Checking...</span>
       </div>
-     
-      <div class="mt-6 flex flex-wrap justify-center gap-4">
-        <a href="/login" id="login-button" class="action-btn btn-blue">Login</a>
-        <a href="/register" class="action-btn btn-green">Register</a>
-        <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
-        <button id="droplist-button" class="action-btn btn-yellow">Drop List</button>
-        <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
-        <button id="item-viewer-button" class="action-btn btn-green">Item Viewer</button>
-        <button id="download-button-header" class="action-btn btn-purple">Download</button>
-        <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
+
+      <!-- Hamburger Menu Button (for mobile) -->
+      <div class="md:hidden flex justify-center mt-4">
+        <button id="hamburger-menu-button" class="hamburger-button" aria-label="Open main menu" aria-expanded="false">
+          <span class="sr-only">Open main menu</span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
       </div>
+
+      <!-- Navigation Links -->
+      <nav id="mobile-menu" class="hidden md:flex md:flex-wrap md:justify-center md:gap-4 md:mt-6">
+        <!-- Links will be dynamically populated by script.js -->
+      </nav>
     </header>
 
     <!-- ========================================================================
@@ -150,6 +154,20 @@
   ======================================================================== -->
 
   <!-- IMAGE LIGHTBOX/MODAL -->
+  <div id="quantity-modal" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div id="quantity-modal-content" class="ui-panel p-8 text-center max-w-sm w-full transform scale-95 transition-transform duration-300">
+        <h2 id="quantity-modal-title" class="text-2xl font-bold text-yellow-400 mb-4">Enter Quantity</h2>
+        <p id="quantity-modal-message" class="text-gray-300 mb-4">How many would you like?</p>
+        <div class="mb-4">
+            <input type="number" id="quantity-input" class="w-full bg-gray-900/50 border border-gray-600 rounded-md p-2 text-center text-white" value="1" min="1" autocomplete="off">
+            <p class="text-sm text-gray-400 mt-2">Total: <span id="quantity-total-price" class="font-bold text-yellow-300">0 Adena</span></p>
+        </div>
+        <div class="flex justify-center gap-4">
+            <button id="quantity-modal-confirm-btn" class="action-btn btn-green">Confirm</button>
+            <button id="quantity-modal-cancel-btn" class="action-btn btn-gray">Cancel</button>
+        </div>
+    </div>
+</div>
   <div id="lightbox" class="fixed inset-0 modal-overlay-pattern flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
     <img id="lightbox-img" src="" alt="Enlarged gallery image" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 scale-95">
     <!-- Lightbox Navigation -->
@@ -206,11 +224,10 @@
   <!-- ========================================================================
   SCRIPT INCLUDES
   ======================================================================== -->
-  <script type="module" src="firebase-config.js"></script>
   <script type="module" src="modal.js"></script>
   <script type="module" src="item-viewer.js"></script>
   <script type="module" src="droplist.js"></script>  
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 
 </body>
 </html>

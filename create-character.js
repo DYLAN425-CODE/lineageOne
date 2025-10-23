@@ -1,65 +1,3 @@
-import { auth, db } from './firebase-config.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
-import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
-
-/**
- * Fetches and parses the server.properties file.
- * This function is copied here to make this script self-contained.
- * @returns {Promise<object>} A promise that resolves to an object with the server properties.
- */
-async function loadServerProperties() {
-    console.log('[Debug] [create-character] Loading server.properties...');
-    const defaultProps = {
-        MAX_CHARACTER_SLOTS: 6,
-        STARTER_INVENTORY_JSON: '[{"name":"Adena","quantity":5000,"stackable":true,"price":1},{"name":"Red Potion","quantity":30,"stackable":true,"price":30}]',
-    };
-    try {
-        const response = await fetch(`server.properties?v=${Date.now()}`);
-        if (!response.ok) {
-            console.warn('server.properties not found. Using default settings for character creation.');
-            return defaultProps;
-        }
-        const text = await response.text();
-        const properties = {};
-        const numericKeys = ['MAX_CHARACTER_SLOTS'];
-
-        text.split('\n').forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const separatorIndex = line.indexOf('=');
-                if (separatorIndex === -1) return;
-
-                const key = line.substring(0, separatorIndex).trim();
-                let value = line.substring(separatorIndex + 1).trim();
-
-                if (key) {
-                    if (value.toLowerCase() === 'true') {
-                        properties[key] = true;
-                    } else if (value.toLowerCase() === 'false') {
-                        properties[key] = false;
-                    } else if (key.endsWith('_JSON')) {
-                        try {
-                            properties[key] = JSON.parse(value);
-                        } catch (e) {
-                            console.error(`Error parsing JSON for key ${key}:`, e);
-                            properties[key] = defaultProps[key] ? JSON.parse(defaultProps[key]) : null;
-                        }
-                    } else if (numericKeys.includes(key) && !isNaN(Number(value))) {
-                        properties[key] = Number(value);
-                    } else {
-                        properties[key] = value;
-                    }
-                }
-            }
-        });
-        console.log('[Debug] [create-character] server.properties loaded.');
-        return { ...defaultProps, ...properties };
-    } catch (error) {
-        console.error('Failed to load server.properties in create-character.js:', error);
-        return defaultProps;
-    }
-}
-
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed.
  * @param {Function} func The function to debounce.
@@ -84,32 +22,38 @@ function generateUUID() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // This page requires a logged-in user.
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // User is signed in, proceed with initialization.
-            await initializeCharacterCreation(user);
-        } else {
-            // No user is signed in. Redirect to login.
-            showInfoModal('Login Required', 'You must be logged in to create a character.', {
-                onOk: () => { window.location.href = '/login'; }
-            });
-        }
-    });
+    // This page requires a logged-in user. Check the session from local storage.
+    const user = window.checkSession();
+
+    if (user) {
+        // User is signed in, proceed with initialization.
+        await initializeCharacterCreation(user);
+    } else {
+        // No user is signed in. Redirect to login.
+        showInfoModal('Login Required', 'You must be logged in to create a character.', {
+            onOk: () => { window.location.href = 'login.html'; }
+        });
+    }
 });
 
 async function initializeCharacterCreation(user) {
-    const serverProps = await loadServerProperties();
+    // serverProperties should be loaded by script.js, which is included on the page.
+    // We might need to wait for it if it's not ready.
+    if (!window.serverProperties) {
+        window.serverProperties = await window.loadServerProperties();
+    }
+    const serverProps = window.serverProperties;
 
     // --- Check if user has available character slots ---
-    const q = query(collection(db, "characters"), where("owner", "==", user.uid));
-    const querySnapshot = await getDocs(q);
-    const userCharacterCount = querySnapshot.size;
+    const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+    const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === user.email.toLowerCase());
+    const userCharacterCount = userCharacters.length;
+
     const maxSlots = serverProps.MAX_CHARACTER_SLOTS || 6;
 
     if (userCharacterCount >= maxSlots) {
         showInfoModal('Character Slots Full', 'You have reached the maximum number of characters. Please delete one from the dashboard to create a new one.', {
-            onOk: () => { window.location.href = '/dashboard'; }
+            onOk: () => { window.location.href = 'dashboard.html'; }
         });
         // Disable the form to prevent submission
         document.getElementById('character-creation-form').querySelectorAll('input, button, select').forEach(el => el.disabled = true);
@@ -135,10 +79,10 @@ function setupFormListeners(user, serverProps) {
                 charNameStatus.textContent = '';
                 return;
             }
-            const q = query(collection(db, "characters"), where("charname_lowercase", "==", name.toLowerCase()));
-            const querySnapshot = await getDocs(q);
-            const isTaken = !querySnapshot.empty;
-
+            // Check against local storage
+            const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+            const isTaken = allCharacters.some(char => char.charname_lowercase === name.toLowerCase());
+            
             if (isTaken) {
                 charNameStatus.innerHTML = `<span class="text-red-500">❌ Name is already taken.</span>`;
             } else {
@@ -157,9 +101,8 @@ function setupFormListeners(user, serverProps) {
             const charClass = document.getElementById('class-select').value;
 
             // Final check for name availability on submit
-            const nameQuery = query(collection(db, "characters"), where("charname_lowercase", "==", charName.toLowerCase()));
-            const nameSnapshot = await getDocs(nameQuery);
-            if (!nameSnapshot.empty) {
+            const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+            if (allCharacters.some(char => char.charname_lowercase === charName.toLowerCase())) {
                 messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Character name is already taken.</p>`;
                 charNameInput.focus();
                 return;
@@ -177,7 +120,8 @@ function setupFormListeners(user, serverProps) {
             };
 
             const newCharacter = {
-                owner: currentUser.uid,
+                id: generateUUID(), // Assign a persistent unique ID on creation
+                owner: user.email, // Use email as the owner identifier
                 charname: charName,
                 charname_lowercase: charName.toLowerCase(), // For case-insensitive queries
                 gender: charGender,
@@ -190,9 +134,13 @@ function setupFormListeners(user, serverProps) {
             newCharacter.inventory = starterInventory.map(item => ({ ...item, id: generateUUID() }));
 
             try {
-                await addDoc(collection(db, "characters"), newCharacter);
+                // Save to local storage
+                const existingCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+                existingCharacters.push(newCharacter);
+                localStorage.setItem('characters', JSON.stringify(existingCharacters));
+
                 showInfoModal('Character Created!', 'Your new hero is ready for adventure. You will now be redirected to the dashboard.', {
-                    onOk: () => { window.location.href = '/dashboard'; }
+                    onOk: () => { window.location.href = 'dashboard.html'; }
                 });
             } catch (error) {
                 console.error("Error adding character to Firestore: ", error);

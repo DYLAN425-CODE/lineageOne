@@ -1,13 +1,3 @@
-import { auth, db } from './firebase-config.js';
-import { 
-    signInWithEmailAndPassword, 
-    setPersistence, 
-    browserSessionPersistence, 
-    browserLocalPersistence,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginFormSection = document.getElementById('loginForm');
     const passwordResetSection = document.getElementById('passwordResetFlow');
@@ -21,61 +11,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Login Form ---
     const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(event) {
-            event.preventDefault();
+    const loginMessage = document.getElementById('login-message');
 
-            const email = this.elements.email.value;
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            loginMessage.innerHTML = ''; // Clear previous messages
+
+            const email = this.elements.email.value.trim();
             const password = this.elements.password.value;
             const emailInput = this.elements.email;
-            const rememberMe = this.elements['remember-me'].checked;
-            
-            console.log(`[Firebase] Attempting login for email: ${email}`);
 
-            // Set persistence (remember me)
-            const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
-            setPersistence(auth, persistence)
-              .then(() => {
-                // Sign in with the provided email and password.
-                return signInWithEmailAndPassword(auth, email, password);
-              })
-              .then(userCredential => {
-                // Success! Redirect to the main page.
-                console.log(`[Firebase] Login successful for user: ${userCredential.user.email}`);
-                window.location.href = '/dashboard';
-              })
-              .catch(error => {
-                // Handle any errors from the chain.
-                console.error(`[Firebase] Login Error:`, error.message);
+            // --- Local Storage Authentication Logic ---
+            console.log(`[LocalAuth] Attempting login for email: ${email}`);
+
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+            const user = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+            if (!user) {
+                console.warn(`[LocalAuth] Login failed: User not found for email ${email}`);
                 showInfoModal('Login Failed', 'Invalid email or password.', { type: 'error' });
                 emailInput.focus();
-              });
+                return;
+            }
+
+            // Check if user is banned
+            if (user.banned) {
+                console.warn(`[LocalAuth] Login failed: User ${email} is banned.`);
+                showInfoModal('Account Banned', 'This account has been banned. Please contact support for assistance.', { type: 'error' });
+                return;
+            }
+
+            // Hash the entered password and compare it with the stored hash
+            const hashedPassword = await window.simpleHash(password);
+
+            if (hashedPassword === user.password) {
+                // --- Login Successful ---
+                console.log(`[LocalAuth] Login successful for user: ${user.email}`);
+
+                // Update user's status in the main user list
+                user.lastLogin = new Date().toISOString();
+                user.status = 'Online';
+                user.device = navigator.userAgent; // Store user agent as device info
+                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+                // Create a session object (without the password)
+                const sessionUser = {
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                };
+                sessionStorage.setItem('loggedInUser', JSON.stringify(sessionUser));
+
+                window.location.href = 'dashboard.html';
+            } else {
+                // --- Login Failed ---
+                console.warn(`[LocalAuth] Login failed: Incorrect password for ${email}`);
+                showInfoModal('Login Failed', 'Invalid email or password.', { type: 'error' });
+                emailInput.focus();
+            }
         });
     }
 
     // --- Password Reset Flow ---
-    const passwordResetForm = document.getElementById('password-reset-form');
-    if (passwordResetForm) {
-        passwordResetForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const messageDiv = document.getElementById('password-reset-message');
-            const email = this.elements.email.value;
-
-            console.log(`[Firebase] Sending password reset email to: ${email}`);
-            sendPasswordResetEmail(auth, email)
-                .then(() => {
-                    console.log('[Firebase] Password reset email sent.');
-                    messageDiv.innerHTML = `<p class="font-bold text-green-400">✅ Password reset email sent! Please check your inbox.</p>`;
-                })
-                .catch((error) => {
-                    console.error(`[Firebase] Password Reset Error: ${error.code}`, error.message);
-                    if (error.code === 'auth/user-not-found') {
-                        messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ No account found with that email address.</p>`;
-                    } else {
-                        messageDiv.innerHTML = `<p class="font-bold text-red-500">❌ Error: ${error.message}</p>`;
-                    }
-                });
-        });
+    // This functionality is not yet implemented in the new backend.
+    // The button is already hidden in the HTML, so we'll just ensure the section is hidden.
+    const forgotPasswordButton = document.getElementById('forgot-password-button');
+    if (forgotPasswordButton) {
+        forgotPasswordButton.parentElement.classList.add('hidden');
+    }
+    if (passwordResetSection) {
+        passwordResetSection.classList.add('hidden');
     }
 
     // --- Toggle between Login and Password Reset forms ---

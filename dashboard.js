@@ -1,11 +1,11 @@
-import { auth, db } from './firebase-config.js';
-import { onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
-import { collection, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+// Firebase imports are removed as we are switching to local storage authentication.
 
 // ========================================================================
 //  DOM CONTENT LOADED - All the code inside this function runs after the page has finished loading.
 // ========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // This function is defined in script.js and checks sessionStorage
+    const user = window.checkSession();
 
     let isDashboardInitialized = false;
     let currentUser = null;
@@ -16,12 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('character-select-view').classList.remove('hidden');
             document.getElementById('character-detail-view').classList.add('hidden');
             renderCharacterSlots(user); // Re-render slots in case a character was created/deleted
-            return;
-        }
-
-        if (!user) {
-            console.log('[Dashboard] No user found, redirecting to login.');
-            window.location.href = '/login';
             return;
         }
 
@@ -50,13 +44,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function renderCharacterSlots(user) {
         if (!user) return;
 
-        // Use email for display, remove the domain part for a cleaner look
-        const username = user.email.split('@')[0];
+        const username = user.username;
         document.getElementById('dashboard-username').textContent = username;
 
-        const q = query(collection(db, "characters"), where("owner", "==", user.uid));
-        const querySnapshot = await getDocs(q);
-        const userCharacters = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // --- Local Storage Character Fetching ---
+        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+        // The user object from sessionStorage has an email property.
+        // The character objects in localStorage have an owner property (which is the user's email).
+        const userCharacters = allCharacters.filter(char => char.owner.toLowerCase() === user.email.toLowerCase());
+
+        // Assign a temporary local ID for DOM operations if one doesn't exist
+        userCharacters.forEach((char, index) => {
+            if (!char.id) {
+                char.id = `local-${index}-${Date.now()}`;
+            }
+        });
+
         const slotsContainer = document.getElementById('character-slots-container');
         const maxSlots = window.serverProperties?.MAX_CHARACTER_SLOTS || 6;
 
@@ -68,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (userCharacters[i]) {
                 const char = userCharacters[i];
-                slotDiv.innerHTML = `
+                slotDiv.innerHTML = ` 
                     <h3 class="text-2xl font-bold text-white text-shadow">${char.charname}</h3>
                     <p class="text-gray-300 mt-1">Lv. 1 ${char.class}</p>
                     <div class="flex gap-2 mt-4">
@@ -80,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 slotDiv.innerHTML = `
                     <h3 class="text-2xl font-bold text-gray-500">Empty Slot</h3>
                     <p class="text-gray-400 mt-1">Available</p>
-                    <a href="/create-character" class="create-char-btn mt-4 action-btn btn-green">Create Character</a>
+                    <a href="create-character.html" class="create-char-btn mt-4 action-btn btn-green">Create Character</a>
                 `;
             }
             slotsContainer.appendChild(slotDiv);
@@ -95,7 +98,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectView = document.getElementById('character-select-view');
         const detailView = document.getElementById('character-detail-view');
         const displayContainer = document.getElementById('character-display');
-        displayContainer.dataset.characterId = character.id; // Store character ID for later use
 
         // --- Populate Storage ---
         const storagePanel = document.getElementById('character-storage-panel'); 
@@ -202,101 +204,68 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Handles all clicks within the storage panel using event delegation.
      * @param {Event} event The click event.
      */
-    async function handleStorageClick(event) {
+    function handleStorageClick(event) {
         const button = event.target;
-        const charId = document.getElementById('character-display').dataset.characterId;
+        const activeCharName = document.querySelector('#character-display .stat-item span.font-bold.text-white').textContent;
+        const allChars = JSON.parse(localStorage.getItem('characters')) || [];
+        const charIndex = allChars.findIndex(c => c.name === activeCharName);
+        if (charIndex === -1) return;
+        let character = allChars[charIndex];
 
-        // Ensure user is still logged in before any write operation
-        if (!auth.currentUser || !charId) {
-            showInfoModal('Error', 'Character or user session not found. Please try again.', { type: 'error' });
-            return;
-        }
-
-        const charDocRef = doc(db, "characters", charId);
+        const updateAndRerender = () => {
+            allChars[charIndex] = character;
+            localStorage.setItem('characters', JSON.stringify(allChars));
+            showCharacterDetails(character);
+        };
 
         // --- Handle Split Item ---
         if (button.classList.contains('split-item-btn')) {
             const itemId = button.dataset.itemId;
-            try {
-                const charDoc = await getDoc(charDocRef);
-                if (!charDoc.exists()) throw new Error("Character not found.");
+            const itemToSplit = character.inventory.find(i => i.id === itemId);
 
-                let character = { id: charDoc.id, ...charDoc.data() };
-                const itemToSplit = character.inventory.find(i => i.id === itemId);
+            if (!itemToSplit || itemToSplit.quantity <= 1) return;
 
-                if (!itemToSplit || itemToSplit.quantity <= 1) return;
+            const quantityToSplit = parseInt(prompt(`How many ${itemToSplit.name} do you want to split? (Max: ${itemToSplit.quantity - 1})`), 10);
 
-                const quantityToSplit = parseInt(prompt(`How many ${itemToSplit.name} do you want to split? (Max: ${itemToSplit.quantity - 1})`), 10);
-
-                if (isNaN(quantityToSplit) || quantityToSplit <= 0 || quantityToSplit >= itemToSplit.quantity) {
-                    showInfoModal('Invalid Quantity', 'Please enter a number greater than 0 and less than the total stack size.', { type: 'error' });
-                    return;
-                }
-
-                // Reduce the original stack's quantity
-                itemToSplit.quantity -= quantityToSplit;
-
-                // Create a new item stack with the split quantity
-                const newItem = {
-                    ...itemToSplit,
-                    id: generateUUID(),
-                    quantity: quantityToSplit
-                };
-                character.inventory.push(newItem);
-
-                // Update the document in Firestore
-                await updateDoc(charDocRef, { inventory: character.inventory });
-
-                // Re-render the details view with the updated character data
-                showCharacterDetails(character);
-                showInfoModal('Success', `Successfully split ${quantityToSplit} ${itemToSplit.name}.`);
-            } catch (error) {
-                console.error("Error splitting item:", error);
-                showInfoModal('Error', `Could not split item. ${error.message}`, { type: 'error' });
+            if (isNaN(quantityToSplit) || quantityToSplit <= 0 || quantityToSplit >= itemToSplit.quantity) {
+                alert('Invalid quantity. Please enter a number greater than 0 and less than the total stack size.');
+                return;
             }
+
+            // Reduce the original stack's quantity
+            itemToSplit.quantity -= quantityToSplit;
+
+            // Create a new item stack with the split quantity
+            const newItem = {
+                ...itemToSplit, // Copy properties from the original item
+                id: generateUUID(), // Generate a new unique ID for the new stack
+                quantity: quantityToSplit
+            };
+
+            // Add the new stack to the inventory
+            character.inventory.push(newItem);
+
+            updateAndRerender();
         }
 
         // --- Handle Combine Stacks ---
         if (button.id === 'combine-stacks-btn') {
-            try {
-                const charDoc = await getDoc(charDocRef);
-                if (!charDoc.exists()) throw new Error("Character not found.");
-
-                let character = { id: charDoc.id, ...charDoc.data() };
-                const inventory = character.inventory || [];
-                
-                const combinedInventory = [];
-                const stackableItems = new Map();
-
-                // Separate non-stackable and process stackable items
-                for (const item of inventory) {
-                    if (item.stackable) {
-                        const key = item.name; // Combine based on name
-                        if (stackableItems.has(key)) {
-                            stackableItems.get(key).quantity += item.quantity;
-                        } else {
-                            // Store a copy to avoid mutation issues
-                            stackableItems.set(key, { ...item });
-                        }
-                    } else {
-                        combinedInventory.push(item);
-                    }
-                }
-
-                // Add the combined stacks back to the inventory
-                combinedInventory.push(...stackableItems.values());
-
-                await updateDoc(charDocRef, { inventory: combinedInventory });
-                character.inventory = combinedInventory; // Update local character object
-                showCharacterDetails(character); // Re-render
-                showInfoModal('Success', 'All stackable items have been combined.');
-            } catch (error) {
-                console.error("Error combining stacks:", error);
-                showInfoModal('Error', `Could not combine items. ${error.message}`, { type: 'error' });
-            }
+            // This is a placeholder for the combine logic.
+            console.log('Combine button clicked');
         }
 
     }
+
+    // --- Go to Market Button ---
+    document.getElementById('go-to-market-btn').addEventListener('click', () => {
+        const charName = document.querySelector('#character-display .stat-item span.font-bold.text-white').textContent;
+        const user = window.checkSession(); // Get current user from sessionStorage
+        const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+        // Find the character that belongs to the current user and matches the displayed name
+        const characterToEnter = allCharacters.find(c => c.owner.toLowerCase() === user.email.toLowerCase() && c.charname === charName);
+        localStorage.setItem('activeCharacter', JSON.stringify(characterToEnter));
+        window.location.href = 'marketplace.html';
+    });
 
     // ========================================================================
     //  EVENT LISTENERS & DELEGATION
@@ -311,11 +280,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // --- Enter Game Button ---
             if (target.matches('.enter-game-btn')) {
-                const charId = target.dataset.charId;
-                const charDoc = await getDoc(doc(db, "characters", charId));
-                if (charDoc.exists()) {
-                    const characterData = { id: charDoc.id, ...charDoc.data() };
-                    showCharacterDetails(characterData);
+                const charIdToFind = target.dataset.charId;
+                const allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+                const characterData = allCharacters.find(c => c.id === charIdToFind);
+                if (characterData) {
+                    showCharacterDetails(characterData); 
+                } else {
+                    console.error("Could not find character with ID:", charIdToFind);
                 }
                 return;
             }
@@ -323,13 +294,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             // --- Delete Character Button ---
             if (target.matches('.delete-char-btn')) {
                 const charName = target.dataset.charName;
-                const charId = target.dataset.charId;
+                const charIdToDelete = target.dataset.charId;
                 showConfirmModal({
                     title: 'Delete Character',
                     message: `Are you sure you want to permanently delete <span class="font-bold text-white">${charName}</span>? This action cannot be undone.`,
                     typeToConfirm: charName,
                     onConfirm: async () => {
-                        await deleteDoc(doc(db, "characters", charId));
+                        // --- Local Storage Deletion ---
+                        let allCharacters = JSON.parse(localStorage.getItem('characters')) || [];
+                        const initialLength = allCharacters.length;
+                        allCharacters = allCharacters.filter(c => c.id !== charIdToDelete);
+                        if (allCharacters.length < initialLength) {
+                            localStorage.setItem('characters', JSON.stringify(allCharacters));
+                            console.log(`[Local] Deleted character ${charName}`);
+                        }
                         showInfoModal('Success', `Character ${charName} has been deleted.`);
                         renderCharacterSlots(currentUser); // Re-render the slots view
                     }
@@ -340,7 +318,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             // --- Logout Button ---
             if (target.matches('#logout-btn')) {
                 event.preventDefault();
-                showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', onConfirm: () => auth.signOut() });
+                showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', onConfirm: () => {
+                    // --- Local Storage Logout ---
+                    sessionStorage.removeItem('loggedInUser');
+                    console.log('[Auth] User logged out.');
+                    window.location.href = 'index.html';
+                }});
                 return;
             }
 
@@ -359,29 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     title: 'DELETE ACCOUNT',
                     message: 'This is a <span class="font-bold text-white">PERMANENT</span> action. You will lose your account and all characters. This cannot be undone.',
                     typeToConfirm: 'DELETE',
-                    onConfirm: async () => {
-                        const user = auth.currentUser;
-                        if (!user) {
-                            showInfoModal('Error', 'You must be logged in to delete an account.', { type: 'error' });
-                            return;
-                        }
-                        try {
-                            // 1. Find and delete all characters owned by the user.
-                            const q = query(collection(db, "characters"), where("owner", "==", user.uid));
-                            const querySnapshot = await getDocs(q);
-                            const deletePromises = querySnapshot.docs.map(charDoc => deleteDoc(charDoc.ref));
-                            await Promise.all(deletePromises);
-                            console.log(`[Auth] Deleted ${deletePromises.length} characters for user ${user.uid}.`);
-
-                            // 2. Delete the user from Firebase Authentication.
-                            await deleteUser(user);
-                            showInfoModal('Success', 'Your account has been permanently deleted.');
-                            // onAuthStateChanged will automatically redirect to the login page.
-                        } catch (error) {
-                            console.error("Error deleting account:", error);
-                            showInfoModal('Error', `Could not delete account. You may need to log out and log back in to perform this action. Error: ${error.message}`, { type: 'error' });
-                        }
-                    }
+                    onConfirm: async () => { } // Placeholder for local storage deletion logic
                 });
                 return;
             }
@@ -394,16 +355,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Listen for Firebase Auth state changes to initialize the dashboard
-    onAuthStateChanged(auth, (user) => {
-        const dashboardContent = document.getElementById('dashboard-content');
-        if (user) {
-            // User is signed in, initialize the dashboard
-            dashboardContent.style.opacity = 1; // Make it visible
-            initializeDashboard(user);
-        } else {
-            // No user is signed in, redirect to login.
-            window.location.href = '/';
-        }
-    });
+    // --- Main Initialization Logic ---
+    const dashboardContent = document.getElementById('dashboard-content');
+    if (user) {
+        dashboardContent.style.opacity = 1; // Make it visible
+        initializeDashboard(user);
+    } else {
+        console.log('[Dashboard] No user session found, redirecting to login.');
+        window.location.href = 'login.html';
+    }
 });

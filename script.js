@@ -1,5 +1,3 @@
-import { auth } from './firebase-config.js';
-
 /**
  * Toggles the visibility of different sections on the page.
  * @param {string} id The ID of the section to toggle.
@@ -30,6 +28,11 @@ function toggleForm(id) {
   if (isOpening) {
     const firstInput = targetSection.querySelector('input:not([type="hidden"]), select, button');
     firstInput?.focus();
+    // --- Smooth scroll to the section when it's opened ---
+    // Use a small timeout to ensure the element is visible before scrolling
+    setTimeout(() => {
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }
 
   // --- Custom Logic for Hiding Sections ---
@@ -153,37 +156,138 @@ async function loadServerProperties() {
 // Expose the function to the global window object so other scripts can call it.
 window.loadServerProperties = loadServerProperties;
 
+// ========================================================================
+//  LOCAL AUTHENTICATION & SESSION MANAGEMENT
+// ========================================================================
+
+/**
+ * Checks for an active session in sessionStorage.
+ * @returns {object|null} The user object if a session exists, otherwise null.
+ */
+function checkSession() {
+  const userJson = sessionStorage.getItem('loggedInUser');
+  if (userJson) {
+    try {
+      return JSON.parse(userJson);
+    } catch (e) {
+      console.error("Failed to parse user session data.", e);
+      sessionStorage.removeItem('loggedInUser');
+      return null;
+    }
+  }
+  return null;
+}
+window.checkSession = checkSession; // Expose checkSession globally
+
+/**
+ * Updates the UI based on the user's authentication state.
+ */
+function updateAuthUI() {
+  const user = checkSession();
+  const loginButton = document.getElementById('login-button');
+  const registerButton = document.getElementById('register-button');
+  const logoutButton = document.getElementById('logout-button');
+
+  if (user) {
+    // User is logged in
+    loginButton?.classList.add('hidden');
+    registerButton?.classList.add('hidden');
+    logoutButton?.classList.remove('hidden');
+    console.log('[Auth] User is logged in:', user.email);
+  } else {
+    // User is logged out
+    loginButton?.classList.remove('hidden');
+    registerButton?.classList.remove('hidden');
+    logoutButton?.classList.add('hidden');
+    console.log('[Auth] User is logged out.');
+  }
+}
+
+/**
+ * Populates the navigation menu and sets up the hamburger toggle.
+ */
+function setupNavigation() {
+  const menuContainer = document.getElementById('mobile-menu');
+  const hamburgerButton = document.getElementById('hamburger-menu-button');
+
+  if (!menuContainer || !hamburgerButton) return;
+
+  // Define the navigation links
+  const navLinksHTML = `
+    <a href="login.html" id="login-button" class="action-btn btn-blue">Login</a>
+    <a href="register.html" id="register-button" class="action-btn btn-green">Register</a>
+    <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
+    <a href="droplist.html" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
+    <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
+    <a href="armor.html" id="item-viewer-button" class="action-btn btn-green">Armor</a>
+    <a href="weapon.html" id="weapon-viewer-button" class="action-btn btn-blue">Weapons</a>
+    <button id="download-button-header" class="action-btn btn-purple">Download</button>
+    <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
+  `;
+
+  menuContainer.innerHTML = navLinksHTML;
+
+  // Add event listener for the hamburger button
+  hamburgerButton.addEventListener('click', () => {
+    const isExpanded = hamburgerButton.getAttribute('aria-expanded') === 'true';
+    hamburgerButton.setAttribute('aria-expanded', !isExpanded);
+    hamburgerButton.classList.toggle('open'); // Toggle the 'open' class for CSS animation
+    menuContainer.classList.toggle('menu-visible');
+  });
+
+  // --- Re-initialize UI and Event Listeners for the new buttons ---
+  // Since we just created the buttons with innerHTML, we need to re-run
+  // the functions that attach logic to them.
+
+  // 1. Update Login/Logout visibility
+  updateAuthUI();
+
+  // 2. Apply feature flags from server.properties
+  const props = window.serverProperties || {};
+  if (!props.DOWNLOAD_ENABLED) document.getElementById('download-button-header')?.classList.add('hidden');
+  if (!props.DISCORD_ENABLED) document.getElementById('discord-button')?.classList.add('hidden');
+  if (!props.DROPLIST_ENABLED) document.getElementById('droplist-button')?.classList.add('hidden');
+  if (!props.MARKETPLACE_ENABLED) document.getElementById('marketplace-button')?.classList.add('hidden');
+
+  // 3. Re-attach event listeners for the header buttons
+  const closeMobileMenu = () => {
+      if (window.innerWidth < 1024) { // Only close on mobile (lg breakpoint)
+          hamburgerButton.setAttribute('aria-expanded', 'false');
+          hamburgerButton.classList.remove('open');
+          menuContainer.classList.remove('menu-visible');
+      }
+  };
+
+  document.getElementById('download-button-header')?.addEventListener('click', () => { toggleForm('download'); closeMobileMenu(); });
+  document.getElementById('discord-button')?.addEventListener('click', () => { toggleForm('discord'); closeMobileMenu(); });
+
+  // For links that navigate away, we don't need to close the menu, but it's good practice
+  // if we add more in-page links later.
+  document.getElementById('marketplace-button')?.addEventListener('click', () => window.location.href = 'marketplace.html');
+  document.getElementById('logout-button')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', confirmText: 'Logout', onConfirm: () => { sessionStorage.removeItem('loggedInUser'); window.location.href = 'index.html'; } });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   // ========================================================================
   //  LOAD SERVER PROPERTIES
   // ========================================================================
   window.serverProperties = await loadServerProperties(); // Store globally for toggleForm
-  //  SESSION-BASED UI UPDATES
-  // ========================================================================
-  auth.onAuthStateChanged(user => {
-    const loginButton = document.getElementById('login-button');
-    const registerButton = document.getElementById('register-button');
-    const logoutButton = document.getElementById('logout-button');
-    const countdownSection = document.getElementById('countdown');
 
-    if (user) {
-      // User is signed in.
-      console.log('[Auth] User is signed in:', user.email);
-      // If on the index page, redirect to the dashboard.
-      if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
-        window.location.href = '/dashboard';
-      }
-    } else {
-      // User is signed out.
-      console.log('[Auth] User is signed out.');
-      loginButton?.classList.remove('hidden');
-      registerButton?.classList.remove('hidden');
-      logoutButton?.classList.add('hidden');
-      // Ensure main content is visible for non-logged-in users
-      if (typeof toggleForm === 'function') toggleForm(null);
-    }
-  });
+  // --- Setup Navigation ---
+  // This populates the nav and adds the hamburger menu logic.
+  setupNavigation();
+
+  // --- Check Session and Update UI ---
+  // This runs on every page that includes script.js
+  // This is now called *inside* setupNavigation to ensure buttons exist first.
+  // We still call it here for other pages that don't have the hamburger menu.
+  if (!document.getElementById('mobile-menu')) {
+      updateAuthUI();
+  }
 
   // --- Feature Flag UI Updates ---
   const downloadButton = document.getElementById('download-button-header');
@@ -196,26 +300,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   const marketplaceButton = document.getElementById('marketplace-button');
   const serverStatusIndicator = document.getElementById('server-status');
 
-  if (!window.serverProperties.DOWNLOAD_ENABLED) {
-    downloadButton?.classList.add('hidden');
-  }
-  if (!window.serverProperties.DISCORD_ENABLED) {
-    discordButton?.classList.add('hidden');
-  }
+  // The logic for header buttons is now handled inside setupNavigation.
+  // We only need to handle the non-header elements here.
+  // if (!window.serverProperties.DOWNLOAD_ENABLED) {
+  //   downloadButton?.classList.add('hidden');
+  // }
+  // if (!window.serverProperties.DISCORD_ENABLED) {
+  //   discordButton?.classList.add('hidden');
+  // }
   if (!window.serverProperties.COUNTDOWN_ENABLED) {
     countdownSection?.classList.add('hidden');
   }
   if (!window.serverProperties.GALLERY_ENABLED) {
     gallerySection?.classList.add('hidden');
   }
+  // The logic for header buttons is now handled inside setupNavigation.
+  // if (!window.serverProperties.DROPLIST_ENABLED) {
+  //   droplistButton?.classList.add('hidden');
+  // }
+  // if (!window.serverProperties.MARKETPLACE_ENABLED) {
+  //   marketplaceButton?.classList.add('hidden');
+  // }
   if (!window.serverProperties.LORE_ENABLED) {
     loreSection?.classList.add('hidden');
-  }
-  if (!window.serverProperties.DROPLIST_ENABLED) {
-    droplistButton?.classList.add('hidden');
-  }
-  if (!window.serverProperties.MARKETPLACE_ENABLED) {
-    marketplaceButton?.classList.add('hidden');
   }
   if (!window.serverProperties.SERVER_STATUS_ENABLED) {
     serverStatusIndicator?.classList.add('hidden');
@@ -334,22 +441,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ========================================================================
   //  EVENT LISTENERS FOR HEADER NAVIGATION BUTTONS
   // ========================================================================
-  document.getElementById('download-button-header')?.addEventListener('click', () => {
-    toggleForm('download');
-  });
+  // These are now attached inside the setupNavigation() function to ensure
+  // they are applied to the dynamically created buttons.
+  // We wrap this in a check for pages that might not have the mobile menu.
+  if (!document.getElementById('mobile-menu')) {
+      document.getElementById('download-button-header')?.addEventListener('click', () => {
+        toggleForm('download');
+      });
 
-  document.getElementById('droplist-button')?.addEventListener('click', () => window.location.href = '/droplist');
-  
-  document.getElementById('item-viewer-button')?.addEventListener('click', () => {
-    window.location.href = '/item-viewer';
-  });
-  document.getElementById('marketplace-button')?.addEventListener('click', () => {
-    window.location.href = '/marketplace';
-  });
+      document.getElementById('marketplace-button')?.addEventListener('click', () => {
+        window.location.href = 'marketplace.html';
+      });
 
-  document.getElementById('discord-button')?.addEventListener('click', () => {
-    toggleForm('discord');
-  });
+      document.getElementById('discord-button')?.addEventListener('click', () => {
+        toggleForm('discord');
+      });
+
+      document.getElementById('logout-button')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showConfirmModal({
+            title: 'Confirm Logout',
+            message: 'Are you sure you want to end your session?',
+            confirmText: 'Logout',
+            onConfirm: () => {
+                sessionStorage.removeItem('loggedInUser');
+                window.location.href = 'index.html';
+            }
+        });
+      });
+  }
 
   // ========================================================================
   //  SEAMLESS BACKGROUND VIDEO PLAYLIST
@@ -531,10 +651,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
+  // Expose simpleHash globally for use in other scripts
+  window.simpleHash = simpleHash;
   // ========================================================================
   //  HANDLE FORM SUBMISSION (SIMULATED BACKEND)
   // ========================================================================
-
   // --- Download Button Animation ---
   const downloadBtn = document.getElementById('download-btn');
   if (downloadBtn) {
@@ -569,11 +690,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           // Use the more descriptive info modal with a warning icon
           showInfoModal(
-            'Download Not Available', 
+            'Download Not Available',
             'The game client is not yet ready for download. Please check back on the official launch date.',
-            { 
+            {
               type: 'warning',
-              onOk: () => toggleForm('download') 
+              onOk: () => toggleForm('download')
             }
           );
 

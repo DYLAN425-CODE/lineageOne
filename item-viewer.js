@@ -2,109 +2,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pageContent = document.getElementById('page-content');
     if (!pageContent) return;
 
-    /**
-     * Fetches and parses the server.properties file.
-     * This function is copied here to make this script self-contained.
-     * @returns {Promise<object>} A promise that resolves to an object with the server properties.
-     */
-    async function loadServerProperties() {
-        const defaultProps = {
-            // Add any defaults needed by item-viewer if necessary
-        };
-        try {
-            const response = await fetch(`server.properties?v=${Date.now()}`);
-            if (!response.ok) {
-                console.warn('server.properties not found in item-viewer.js. Using default settings.');
-                return defaultProps;
-            }
-            const text = await response.text();
-            const properties = {};
-            text.split('\n').forEach(line => {
-                line = line.trim();
-                if (line && !line.startsWith('#')) {
-                    const separatorIndex = line.indexOf('=');
-                    if (separatorIndex > -1) {
-                        const key = line.substring(0, separatorIndex).trim();
-                        const value = line.substring(separatorIndex + 1).trim();
-                        if (key) properties[key] = value;
-                    }
-                }
-            });
-            return { ...defaultProps, ...properties };
-        } catch (error) {
-            console.error('Failed to load server.properties in item-viewer.js:', error);
-            return defaultProps;
-        }
-    }
-
     const itemContainer = document.getElementById('item-viewer-container');
     const loadingText = document.getElementById('item-viewer-loading');
     const searchInput = document.getElementById('item-search');
     let allItems = []; // This will hold all the item data once loaded.
     let isLoaded = false; // Flag to prevent re-loading data.
 
-    /**
-     * A robust parser for SQL INSERT values using a regular expression.
-     * It correctly handles numbers, NULL, and quoted strings.
-     */
-    function parseSqlValues(valuesString) {
-        // This regex finds numbers, 'strings' (handling escaped quotes ''), or NULL, separated by commas.
-        const regex = /'((?:[^']|'')*)'|(\d+)|(NULL)/g;
-        const values = [];
-        let match;
-        while ((match = regex.exec(valuesString)) !== null) {
-            // match[1] is the captured string, match[2] is the number, match[3] is NULL
-            const value = match[1] ?? match[2] ?? match[3];
-            values.push(value);
-        }
-        return values.map(v => {
-            if (v === 'NULL' || v === null) return null;
-            return isNaN(Number(v)) ? v : Number(v);
-        });
-    }
-
-    /**
-     * Fetches and parses the armor.sql file.
-     */
     const loadItems = async () => {
-        if (isLoaded) return; // Prevent re-loading
+        if (isLoaded) return;
 
         try {
-            const response = await fetch('data/armor.sql');
+            const response = await fetch('data/armor.txt');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const sqlText = await response.text();
-            const lines = sqlText.split('\n');
-            const armorData = [];
-
-            const armorColumns = [
-                'id', 'name', 'name_jp', 'type', 'safetolevel', 'ac', 'material', 'weight',
-                'invgfx', 'groundgfx', 'item_desc_id', 'dmg_reduction', 'bless', 'trade',
-                'cant_delete', 'can_seal', 'class_knight', 'class_elf', 'class_mage',
-                'class_darkelf', 'class_dragonknight', 'add_str', 'add_con', 'add_dex',
-                'add_int', 'add_wis', 'add_cha', 'add_hp', 'add_mp', 'add_hpr', 'add_mpr',
-                'add_sp', 'min_lvl', 'max_lvl', 'm_def', 'haste_item', 'damage_reduction',
-                'hit_modifier', 'dmg_modifier', 'bow_hit_modifier', 'bow_dmg_modifier',
-                'double_dmg_chance', 'can_enchant', 'unidentified', 'use_royal', 'use_knight',
-                'use_elf', 'use_mage', 'use_darkelf', 'use_dragonknight', 'use_illusionist',
-                'use_warrior', 'fire_resist', 'water_resist', 'wind_resist', 'earth_resist',
-                'stun_resist', 'stone_resist', 'sleep_resist', 'freeze_resist', 'sustain_resist',
-                'blind_resist', 'magic_bonus'
-            ];
-
-            for (const line of lines) {
-                if (line.toUpperCase().startsWith('INSERT INTO `ARMOR` VALUES')) {
-                    const valuesString = line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'));
-                    const values = parseSqlValues(valuesString);
-                    const item = {};
-                    armorColumns.forEach((col, index) => {
-                        item[col] = values[index];
-                    });
-                    armorData.push(item);
-                }
+            const itemsText = await response.text();
+            const lines = itemsText.split('\n').filter(line => line.trim() !== '');
+            const headerLine = lines.shift();
+            if (!headerLine) {
+                throw new Error("armor.txt is empty or has no header.");
             }
-            allItems = armorData;
+            const headers = headerLine.split('\t').map(h => h.replace(/"/g, '').trim());
+
+            allItems = lines.map(line => {
+                const values = line.split('\t').map(v => v.replace(/"/g, '').trim());
+                const item = {};
+                headers.forEach((col, index) => {
+                    item[col] = values[index];
+                });
+                return item;
+            });
             isLoaded = true;
             console.log('[Debug] Item Viewer data loaded.');
             renderItems();
@@ -164,9 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             addStat('Dmg Reduc', item.damage_reduction);
 
             const resists = {
-                'Fire': item.fire_resist, 'Water': item.water_resist,
-                'Wind': item.wind_resist, 'Earth': item.earth_resist,
-                'Stun': item.stun_resist, 'Hold': item.sustain_resist,
+                'Fire': item.defense_fire, 'Water': item.defense_water,
+                'Wind': item.defense_wind, 'Earth': item.defense_earth,
+                'Stun': item.regist_stun, 'Hold': item.regist_sustain,
             };
 
             for (const [label, value] of Object.entries(resists)) {
@@ -178,17 +105,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             let classHtml = '';
             const classes = {
                 'Ro': item.use_royal, 'Kn': item.use_knight, 'El': item.use_elf, 'Ma': item.use_mage,
-                'DE': item.use_darkelf, 'DK': item.use_dragonknight, 'Il': item.use_illusionist, 'Wa': item.use_warrior
+                'DE': item.use_darkelf, 'DK': item.use_dragonknight, 'BW': item.use_blackwizard, 'Wa': item.use_warrior
             };
             
             let usableClasses = [];
             for (const [short, canUse] of Object.entries(classes)) {
-                if (canUse === 1) {
+                if (canUse == 1) {
                     usableClasses.push(`<span class="text-green-400">${short}</span>`);
                 }
             }
 
-            if (usableClasses.length > 0 && usableClasses.length < 8) {
+            if (usableClasses.length > 0 && usableClasses.length < 9) {
                 classHtml = `<div class="text-xs mt-2">Classes: ${usableClasses.join(', ')}</div>`;
             } else {
                 classHtml = `<div class="text-xs mt-2 text-gray-400">All Classes</div>`;
