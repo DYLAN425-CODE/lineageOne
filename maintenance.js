@@ -52,6 +52,8 @@
 
             const defaultMessage = 'The server is currently undergoing scheduled maintenance. We will be back online shortly. Thank you for your patience.';
             const maintenanceMessage = properties['MAINTENANCE_MESSAGE'] || defaultMessage;
+            const maintenanceEndsAt = properties['MAINTENANCE_ENDS_AT'];
+            let countdownHTML = '';
 
             // Replace the entire document's HTML with the maintenance page
             document.documentElement.innerHTML = `
@@ -72,9 +74,69 @@
                     <div class="maintenance-panel ui-panel max-w-2xl">
                         <h1 class="text-4xl font-bold text-yellow-400 mb-4 text-shadow">Under Maintenance</h1>
                         <p class="text-lg text-gray-300">${maintenanceMessage.replace(/\n/g, '<br>')}</p>
+                        ${maintenanceEndsAt ? `
+                        <div id="countdown" class="text-center py-6">
+                            <h2 class="text-xl font-semibold text-gray-300 mb-2">Re-opening in:</h2>
+                            <div class="text-3xl font-bold text-yellow-400 mt-2" id="timer">Loading...</div>
+                        </div>
+                        ` : ''}
                     </div>
                 </body>
             `;
+
+            // If a countdown date is set, inject and start the timer script
+            if (maintenanceEndsAt) {
+                const script = document.createElement('script');
+                script.textContent = `
+                    (function() {
+                        const launchDate = new Date('${maintenanceEndsAt}');
+                        if (isNaN(launchDate.getTime())) {
+                            console.error("Invalid MAINTENANCE_ENDS_AT date format.");
+                            return;
+                        }
+
+                        const timerInterval = setInterval(() => {
+                            const now = new Date();
+                            const timerEl = document.getElementById("timer");
+                            if (!timerEl) return;
+
+                            const diffMs = launchDate - now;
+
+                            if (diffMs <= 0) {
+                                timerEl.innerHTML = '<div class="text-center text-green-400 font-bold">The site should be back online!</div>';
+                                clearInterval(timerInterval);
+                                return;
+                            }
+
+                            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+                            function unitBlock(value, label) {
+                                return \`
+                                    <div class="timer-unit">
+                                        <div class="timer-value">\${String(value).padStart(2, '0')}</div>
+                                        <div class="timer-label">\${label}</div>
+                                    </div>
+                                \`;
+                            }
+
+                            timerEl.innerHTML = \`
+                                <div class="flex flex-wrap justify-center items-start gap-2 sm:gap-3">
+                                    \${days > 0 ? unitBlock(days, 'Days') + '<div class="timer-separator">:</div>' : ''}
+                                    \${unitBlock(hours, 'Hours')}
+                                    <div class="timer-separator">:</div>
+                                    \${unitBlock(minutes, 'Minutes')}
+                                    <div class="timer-separator">:</div>
+                                    \${unitBlock(seconds, 'Seconds')}
+                                </div>
+                            \`;
+                        }, 1000);
+                    })();
+                `;
+                document.body.appendChild(script);
+            }
         }
     } catch (error) {
         console.error("Maintenance check failed:", error);

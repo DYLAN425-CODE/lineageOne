@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'add_cha', label: 'CHA', isNumeric: true },
         { key: 'add_hp', label: 'HP', isNumeric: true },
         { key: 'add_mp', label: 'MP', isNumeric: true },
+        { key: 'add_mpr', label: 'MPR', isNumeric: true },
         { key: 'add_sp', label: 'SP', isNumeric: true },
         { key: 'hit_rate', label: 'Hit Rate', isNumeric: true },
         { key: 'dmg_rate', label: 'Dmg Rate', isNumeric: true },

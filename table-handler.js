@@ -38,14 +38,37 @@ export function createDataTable({ tableId, searchInputId, dataUrl, headers, defa
             const rowCells = headers.map(header => {
                 const isName = header.key === 'name';
                 const isPrimary = primaryKeys.has(header.key);
-                const classes = isName ? 'item-name-cell' : `item-stat-cell${isPrimary ? ' item-primary' : ''}`;
+                const classes = isName ? 'item-name-cell text-yellow-400 font-medium' : `item-stat-cell${isPrimary ? ' item-primary' : ''}`;
                 const value = (typeof item[header.key] !== 'undefined' && item[header.key] !== null && item[header.key] !== '') ? item[header.key] : (header.isNumeric ? '0' : 'N/A');
                 return `<td data-label="${header.label}" class="${classes}">${value}</td>`;
             }).join('');
 
             // Create a hidden expanded details block content as a data attribute (escaped)
-            const detailsHtml = headers.map(h => `<div class=\"detail-row\"><strong>${h.label}:</strong> ${((item[h.key] !== undefined && item[h.key] !== null && item[h.key] !== '') ? item[h.key] : (h.isNumeric ? '0' : 'N/A'))}</div>`).join('');
+            let detailsHtml = headers.map(h => `<div class=\"detail-row\"><strong>${h.label}:</strong> ${((item[h.key] !== undefined && item[h.key] !== null && item[h.key] !== '') ? item[h.key] : (h.isNumeric ? '0' : 'N/A'))}</div>`).join('');
 
+            // --- Add Class Usability Info ---
+            const classes = {
+                'Royal': item.use_royal, 'Knight': item.use_knight, 'Elf': item.use_elf, 'Mage': item.use_mage,
+                'Dark Elf': item.use_darkelf, 'Dragon Knight': item.use_dragonknight, 'Black Wizard': item.use_blackwizard, 'Warrior': item.use_warrior
+            };
+            
+            let usableClasses = [];
+            for (const [short, canUse] of Object.entries(classes)) {
+                if (canUse == 1) {
+                    usableClasses.push(`<span class="text-green-400">${short}</span>`);
+                }
+            }
+
+            let classHtml = '';
+            if (usableClasses.length > 0 && usableClasses.length < 8) { // Assuming 8 total classes
+                classHtml = `<div class="detail-row"><strong>Classes:</strong> ${usableClasses.join(', ')}</div>`;
+            } else {
+                classHtml = `<div class="detail-row"><strong>Classes:</strong> <span class="text-gray-400">All</span></div>`;
+            }
+
+            // Append class info to the details view
+            detailsHtml += classHtml;
+            
             return `
                 <tr class="data-row" data-index="${idx}">
                     ${rowCells}
@@ -129,47 +152,29 @@ export function createDataTable({ tableId, searchInputId, dataUrl, headers, defa
         }
     }
 
-    // Do not render header row (show only data rows) per user request
-    tableHead.innerHTML = '';
+    // Render header row for desktop view
+    const headerRow = `<tr>${headers.map(h => `<th data-key="${h.key}">${h.label}</th>`).join('')}</tr>`;
+    if (tableHead) {
+        tableHead.innerHTML = headerRow;
+    }
 
     // Event Listeners
     searchInput.addEventListener('input', applyFilterAndSort);
     tableBody.addEventListener('click', (e) => {
         // Mobile behavior: toggle expanded row
-        if (window.innerWidth <= 768) {
-            const row = e.target.closest('tr.data-row');
-            if (!row) return;
-            const idx = row.getAttribute('data-index');
-            const expanded = tableBody.querySelector(`tr.expanded-stats-row[data-index="${idx}"]`);
-            if (!expanded) return; // nothing to do
+        const row = e.target.closest('tr.data-row');
+        if (!row) return;
+        const idx = row.getAttribute('data-index');
+        const expanded = tableBody.querySelector(`tr.expanded-stats-row[data-index="${idx}"]`);
+        if (!expanded) return; // nothing to do
 
-            const isVisible = expanded.style.display !== 'none';
-            // Hide any other expanded rows first (only one open at a time)
-            tableBody.querySelectorAll('tr.expanded-stats-row').forEach(r => r.style.display = 'none');
+        const isVisible = expanded.style.display !== 'none';
+        // Hide any other expanded rows first (only one open at a time)
+        tableBody.querySelectorAll('tr.expanded-stats-row').forEach(r => r.style.display = 'none');
 
-            expanded.style.display = isVisible ? 'none' : 'table-row';
-            // Prevent the click from bubbling further
-            e.stopPropagation();
-            return;
-        }
-
-        // Desktop/Laptop behavior: toggle inline expanded row (show full stats below the item)
-        if (window.innerWidth >= 1024) {
-            const row = e.target.closest('tr.data-row');
-            if (!row) return;
-            const idx = row.getAttribute('data-index');
-            const expanded = tableBody.querySelector(`tr.expanded-stats-row[data-index="${idx}"]`);
-            if (!expanded) return;
-
-            const isVisible = expanded.style.display !== 'none';
-            // Hide any other expanded rows first (only one open at a time)
-            tableBody.querySelectorAll('tr.expanded-stats-row').forEach(r => r.style.display = 'none');
-
-            expanded.style.display = isVisible ? 'none' : 'table-row';
-            // Prevent the click from bubbling further
-            e.stopPropagation();
-            return;
-        }
+        expanded.style.display = isVisible ? 'none' : 'table-row';
+        // Prevent the click from bubbling further
+        e.stopPropagation();
     });
 
     // Wire close button for bottom panel

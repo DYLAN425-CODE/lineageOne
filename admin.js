@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="text-center py-20">
                     <h1 class="text-4xl font-bold text-red-500">Access Denied</h1>
                     <p class="text-gray-400 mt-4">You do not have permission to view this page.</p>
-                    <a href="index.html" class="mt-8 inline-block action-btn btn-blue">Return to Main Page</a>
+                    <a href="${window.getUrl('index')}" class="mt-8 inline-block action-btn btn-blue">Return to Main Page</a>
                 </div>
             `;
         }

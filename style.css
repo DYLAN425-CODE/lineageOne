@@ -371,7 +371,7 @@ html {
 
 /* Drop List Button */
 .btn-yellow {
-  --neon-color: #4ffb24;
+  --neon-color: #fda603;
   --neon-rgb: 251, 191, 36;
 }
 
@@ -391,6 +391,12 @@ html {
 .btn-orange {
   --neon-color: #fb923c;
   --neon-rgb: 251, 146, 60;
+}
+
+/* Gray/Neutral Button for "Return to Main", etc. */
+.btn-gray {
+  --neon-color: #04f3fc; /* gray-200 */
+  --neon-rgb: 229, 231, 235;
 }
 
 /* === Neon Hover Effect === */
@@ -1162,8 +1168,9 @@ html {
     background-color: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
 }
 
-/* Responsive Card Layout for Mobile */
-@media screen and (max-width: 768px) {
+/* Responsive Card Layout for Mobile and Tablet */
+/* This now applies to all screens up to 1024px wide */
+@media screen and (max-width: 1024px) {
     .data-table thead { display: none; }
     .data-table tr, .data-table td {
         display: block;
@@ -1245,7 +1252,7 @@ html {
   }
 }
 
-/* ======================================================================== */
+/* ======================================================================== 
 /* ========================= HAMBURGER MENU STYLES ======================== */
 /* ======================================================================== */
 
@@ -1258,76 +1265,54 @@ html {
   }
 }
 
-/* Bottom fixed stats panel for laptop/desktop */
+/* For Laptop/Desktop view, show all columns and allow horizontal scroll if needed */
 @media (min-width: 1024px) {
-  .bottom-stats {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 260px; /* fixed height, adjust as needed */
-    background: rgba(5, 5, 10, 0.95);
-    border-top: 1px solid #333;
-    box-shadow: 0 -6px 24px rgba(0,0,0,0.6);
-    z-index: 60;
-    display: flex;
-    flex-direction: column;
+  /* Hide the table header on laptop/desktop for armor and weapon tables only */
+  #armorTable thead, #weaponTable thead {
+    display: none;
   }
-  .bottom-stats.hidden { display: none; }
-  .bottom-stats-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-  }
-  .bottom-stats-title { color: #fccf3f; font-weight: 700; }
-  .bottom-stats-inner {
-    padding: 0.75rem 1rem;
-    overflow-y: auto; /* vertical scroll inside the panel */
-    -webkit-overflow-scrolling: touch;
-  }
-  .bottom-stats .detail-row { padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: #e5e7eb; }
 
-  /* Horizontal scroller inside bottom panel */
-  .bottom-stats-hscroll {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding: 0.5rem 0.25rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-  .bottom-stats-hscroll .stat-card {
-    min-width: 220px;
-    background: rgba(255,255,255,0.03);
-    padding: 0.6rem;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.03);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  }
-  .bottom-stats-hscroll .stat-card h4 { margin: 0 0 0.25rem 0; color: #fccf3f; font-size: 0.95rem; }
-  .bottom-stats-hscroll .stat-card p { margin: 0; color: #e5e7eb; font-size: 0.95rem; }
-
-  /* Vertical details fallback */
-  .bottom-stats-vertical { margin-top: 0.5rem; }
-
-  /* On laptop/desktop: show only item name by default; hide stat columns to create a compact list */
+  /* On laptop/desktop: hide stat columns by default to create a compact list */
   .data-table .item-stat-cell {
     display: none !important;
   }
 
   /* Style the expanded details row to appear as a full-width panel under the item */
   .expanded-stats-row td {
-    display: table-cell;
     background-color: rgba(10,10,15,0.7);
     padding: 0.75rem 1rem;
   }
-  .expanded-stats-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
-  .expanded-stats-content .detail-row { border-bottom: none; padding: 0.15rem 0; color: #e5e7eb; }
+  .expanded-stats-content {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem;
+  }
+  /* Style each stat as a mini-card within the grid */
+  .expanded-stats-content .detail-row {
+    background-color: rgba(0,0,0,0.25);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid #4a3a2a;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .expanded-stats-content .detail-row:hover {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+  }
 
-  /* Ensure table wrapper does not allow horizontal scroll on these pages */
-  .overflow-x-auto { overflow-x: hidden; }
+  /* For etcitem.html, show all columns on desktop instead of using the expandable row */
+  #etcitemTable .item-stat-cell {
+    display: table-cell !important; /* Override the default hiding of stat cells */
+  }
+  #etcitemTable .expanded-stats-row { display: none !important; } /* Hide the expandable row */
+}
+
+/* Floating "Return to Main" button for item viewer pages on laptop/desktop */
+@media (min-width: 1024px) {
+  .return-main-btn {
+    position: fixed;
+    top: 1.5rem; /* 24px */
+    right: 1.5rem; /* 24px */
+    z-index: 100; /* Ensure it's above other content */
+  }
 }
 
 /* Page-scoped helper to disable horizontal scrolling and force wrapping

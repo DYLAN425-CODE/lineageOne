@@ -93,6 +93,7 @@ async function loadServerProperties() {
         STARTER_INVENTORY_JSON: '[{"name":"Adena","quantity":5000,"stackable":true,"price":1},{"name":"Red Potion","quantity":30,"stackable":true,"price":30},{"name":"Haste Potion","quantity":5,"stackable":true,"price":180},{"name":"Trainee\'s T-shirt","quantity":1,"stackable":false,"droppable":false,"price":100}]',
         SITE_TITLE: 'Lineage',
         LOGO_IMAGE_PATH: 'images/logo-lineage.png',
+        USE_CLEAN_URLS: true,
         FOOTER_TEXT: '&copy; 2025 Lineage 1 Server. All rights reserved.',
         SOCIAL_FACEBOOK_URL: '',
         SOCIAL_YOUTUBE_URL: '',
@@ -156,6 +157,20 @@ async function loadServerProperties() {
 // Expose the function to the global window object so other scripts can call it.
 window.loadServerProperties = loadServerProperties;
 
+/**
+ * Generates a URL based on the USE_CLEAN_URLS server property.
+ * @param {string} path The base path of the page (e.g., 'login', 'index').
+ * @returns {string} The formatted URL.
+ */
+function getUrl(path) {
+    const useCleanUrls = window.serverProperties?.USE_CLEAN_URLS ?? true;
+    if (!useCleanUrls) {
+        return `${path}.html`;
+    }
+    return path === 'index' ? '/' : `/${path}`;
+}
+window.getUrl = getUrl; // Expose globally
+
 // ========================================================================
 //  LOCAL AUTHENTICATION & SESSION MANAGEMENT
 // ========================================================================
@@ -214,13 +229,14 @@ function setupNavigation() {
 
   // Define the navigation links
   const navLinksHTML = `
-    <a href="login" id="login-button" class="action-btn btn-blue">Login</a>
-    <a href="register" id="register-button" class="action-btn btn-green">Register</a>
+    <a href="${getUrl('login')}" id="login-button" class="action-btn btn-blue">Login</a>
+    <a href="${getUrl('register')}" id="register-button" class="action-btn btn-green">Register</a>
     <button id="logout-button" class="action-btn btn-red hidden">Logout</button>
-    <a href="droplist" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
+    <a href="${getUrl('droplist')}" id="droplist-button" class="action-btn btn-yellow">Drop List</a>
     <button id="marketplace-button" class="action-btn btn-orange">Marketplace</button>
-    <a href="armor" id="item-viewer-button" class="action-btn btn-green">Armor</a>
-    <a href="weapon" id="weapon-viewer-button" class="action-btn btn-blue">Weapons</a>
+    <a href="${getUrl('armor')}" id="armor-viewer-button" class="action-btn btn-green">Armor</a>
+    <a href="${getUrl('weapon')}" id="weapon-viewer-button" class="action-btn btn-blue">Weapons</a>
+    <a href="${getUrl('etcitem')}" id="etcitem-viewer-button" class="action-btn btn-yellow">Etc Items</a>
     <button id="download-button-header" class="action-btn btn-purple">Download</button>
     <button id="discord-button" class="action-btn btn-indigo">Join Discord</button>
   `;
@@ -248,6 +264,9 @@ function setupNavigation() {
   if (!props.DISCORD_ENABLED) document.getElementById('discord-button')?.classList.add('hidden');
   if (!props.DROPLIST_ENABLED) document.getElementById('droplist-button')?.classList.add('hidden');
   if (!props.MARKETPLACE_ENABLED) document.getElementById('marketplace-button')?.classList.add('hidden');
+  if (!props.ARMOR_VIEWER_ENABLED) document.getElementById('armor-viewer-button')?.classList.add('hidden');
+  if (!props.WEAPON_VIEWER_ENABLED) document.getElementById('weapon-viewer-button')?.classList.add('hidden');
+  if (!props.ETCITEM_VIEWER_ENABLED) document.getElementById('etcitem-viewer-button')?.classList.add('hidden');
 
   // 3. Re-attach event listeners for the header buttons
   const closeMobileMenu = () => {
@@ -261,11 +280,12 @@ function setupNavigation() {
   document.getElementById('download-button-header')?.addEventListener('click', () => { toggleForm('download'); closeMobileMenu(); });
   document.getElementById('discord-button')?.addEventListener('click', () => { toggleForm('discord'); closeMobileMenu(); });
 
-  // For links that navigate away
-  document.getElementById('marketplace-button')?.addEventListener('click', () => window.location.href = 'marketplace');
+  // For links that navigate away, we don't need to close the menu, but it's good practice
+  // if we add more in-page links later.
+  document.getElementById('marketplace-button')?.addEventListener('click', () => window.location.href = getUrl('marketplace'));
   document.getElementById('logout-button')?.addEventListener('click', (e) => {
       e.preventDefault();
-      showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', confirmText: 'Logout', onConfirm: () => { sessionStorage.removeItem('loggedInUser'); window.location.href = 'index'; } });
+      showConfirmModal({ title: 'Confirm Logout', message: 'Are you sure you want to end your session?', confirmText: 'Logout', onConfirm: () => { sessionStorage.removeItem('loggedInUser'); window.location.href = getUrl('index'); } });
   });
 }
 
@@ -449,7 +469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       document.getElementById('marketplace-button')?.addEventListener('click', () => {
-        window.location.href = 'marketplace';
+        window.location.href = getUrl('marketplace');
       });
 
       document.getElementById('discord-button')?.addEventListener('click', () => {
@@ -464,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmText: 'Logout',
             onConfirm: () => {
                 sessionStorage.removeItem('loggedInUser');
-                window.location.href = 'index';
+                window.location.href = getUrl('index');
             }
         });
       });

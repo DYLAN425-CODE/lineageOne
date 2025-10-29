@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Armor List - Lineage</title>
 
+    <!-- Favicon -->
+    <link id="favicon-ico" rel="icon" type="image/x-icon" href="icon/cs.ico" />
+    <link id="favicon-shortcut" rel="shortcut icon" href="icon/cs.ico" />
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -19,11 +23,18 @@
 </head>
 <body class="no-hscroll bg-gradient-to-br from-gray-900 to-black min-h-screen text-gray-200 text-base md:text-lg px-0 md:px-8">
 
+    <!-- ========================================================================
+    BACKGROUND VIDEO
+    ======================================================================== -->
+    <div id="bg-video-container">
+        <video src="media/lineage.mp4" autoplay muted loop playsinline preload="metadata"></video>
+    </div>
+
     <div id="main-content" class="max-w-7xl mx-auto">
 
         <header class="flex justify-between items-center pt-8 pb-4">
             <div class="flex-1">
-                <a href="index" class="action-btn btn-gray inline-flex items-center gap-2">
+                <a href="index.html" class="action-btn btn-gray inline-flex items-center gap-2 return-main-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
@@ -55,22 +66,6 @@
                 </table>
             </div>
         </main>
-    </div>
-
-    <!-- Bottom fixed stats panel (desktop/laptop) -->
-    <div id="bottom-stats" class="bottom-stats hidden" aria-hidden="true">
-        <div class="bottom-stats-header">
-            <div class="bottom-stats-title">Item Stats</div>
-            <button id="bottom-stats-close" class="action-btn action-btn-sm btn-red">Close</button>
-        </div>
-        <div id="bottom-stats-inner" class="bottom-stats-inner">
-            <!-- Horizontal scroller for quick sideways browsing of stats -->
-            <div id="bottom-stats-hscroll" class="bottom-stats-hscroll" aria-label="Item stats horizontally scrollable">
-                <p class="text-center text-gray-400">Select an item to view stats.</p>
-            </div>
-            <!-- Detailed vertical list as fallback/extra -->
-            <div id="bottom-stats-vertical" class="bottom-stats-vertical" style="display:none;"></div>
-        </div>
     </div>
 
     <script type="module" src="armor.js"></script>
